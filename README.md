@@ -73,10 +73,11 @@ jupyter notebook energy_price_analysis.ipynb
 
 ## Model Performance
 
-The model achieves the following performance metrics:
-- Short-term (1-6 hours): MAPE 6-17%
-- Medium-term (7-12 hours): MAPE 18-24%
-- Long-term (13-24 hours): MAPE 23-28%
+The model achieves excellent Mean Absolute Percentage Error (MAPE) across all forecast horizons:
+
+- Short-term (1-6 hours): 4.4-9.9%
+- Medium-term (7-12 hours): 9.7-10.4%
+- Long-term (13-24 hours): 10.1-11%
 
 ## Feature Engineering Pipeline
 
