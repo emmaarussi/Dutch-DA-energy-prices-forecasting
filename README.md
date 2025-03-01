@@ -100,6 +100,31 @@ The model achieves excellent Mean Absolute Percentage Error (MAPE) across all fo
 - Medium-term (7-12 hours): 9.7-10.4%
 - Long-term (13-24 hours): 10.1-11%
 
+## Visualizations
+
+The model generates several visualizations to help understand the data and model performance. These can be found in the `data` directory:
+
+1. **Price Analysis** (`price_analysis.png`):
+   - Historical price trends
+   - Price volatility patterns
+   - Key statistical indicators
+
+2. **Seasonality Analysis** (`seasonality_analysis.png`):
+   - Daily, weekly, and monthly patterns
+   - Seasonal decomposition of price series
+
+3. **Model Performance** (`test_predictions.png`):
+   - Actual vs predicted prices
+   - Forecast accuracy visualization
+
+4. **Error Analysis** (`error_distribution.png`):
+   - Distribution of prediction errors
+   - Error patterns across different horizons
+
+5. **Feature Importance** (`feature_importance.png`):
+   - Relative importance of different features
+   - Impact of feature categories on predictions
+
 ## Feature Engineering Pipeline
 
 The feature engineering pipeline creates a rich set of features for the XGBoost model. Here's a detailed overview of the feature creation process:
