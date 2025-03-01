@@ -17,5 +17,13 @@ ENV/
 # macOS
 .DS_Store
 
+# Environment variables
+.env
+
 # Project specific
 data/*.csv
+data/models/
+data/*.joblib
+data/*.png
+data/*.jpg
+data/*.jpeg
