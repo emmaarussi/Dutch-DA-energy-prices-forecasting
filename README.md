@@ -71,6 +71,27 @@ jupyter notebook energy_price_analysis.ipynb
 - `cv_metrics.csv`: Cross-validation results
 - `test_predictions.csv`: Model predictions on test set
 
+## Training Strategy
+
+The model uses an expanding window time series cross-validation strategy to ensure robust performance and prevent data leakage:
+
+```
+Fold 1:
+- Training:   2021-03-09 → 2025-01-29 (initial window)
+- Validation: 2025-01-29 → 2025-02-05 (next 7 days)
+
+Fold 2:
+- Training:   2021-03-09 → 2025-01-30 (window grows)
+- Validation: 2025-01-30 → 2025-02-06 (next 7 days)
+```
+
+This approach:
+- Maintains temporal ordering of data
+- Uses expanding windows to leverage more historical data over time
+- Validates on 7-day windows to capture weekly patterns
+- Multiple folds ensure robust performance evaluation
+- Simulates real-world forecasting scenarios
+
 ## Model Performance
 
 The model achieves excellent Mean Absolute Percentage Error (MAPE) across all forecast horizons:
