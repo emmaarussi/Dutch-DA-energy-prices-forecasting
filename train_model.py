@@ -28,22 +28,56 @@ class EnergyPriceForecaster:
     
     def train(self, train_data, val_data=None, params=None):
         """Train models for all horizons."""
-        if params is None:
-            params = {
-                'objective': 'reg:squarederror',
-                'eval_metric': ['rmse', 'mae'],
-                'max_depth': 8,
-                'learning_rate': 0.1,
-                'n_estimators': 1000,
-                'early_stopping_rounds': 50,
-                'verbosity': 0
-            }
-        
         print(f"\nTraining models for {self.forecast_horizon} horizons...")
         
         for h in range(1, self.forecast_horizon + 1):
             print(f"\nTraining model for t+{h} horizon...")
             
+            # Select parameters based on forecast horizon
+            if params is None:
+                if h <= 6:  # Short-term forecasts
+                    params = {
+                        'objective': 'reg:squarederror',
+                        'eval_metric': ['rmse', 'mae'],
+                        'max_depth': 10,
+                        'learning_rate': 0.05,
+                        'n_estimators': 2000,
+                        'min_child_weight': 3,
+                        'subsample': 0.8,
+                        'colsample_bytree': 0.8,
+                        'gamma': 0.1,
+                        'early_stopping_rounds': 100,
+                        'verbosity': 0
+                    }
+                elif h <= 12:  # Medium-term forecasts
+                    params = {
+                        'objective': 'reg:squarederror',
+                        'eval_metric': ['rmse', 'mae'],
+                        'max_depth': 8,
+                        'learning_rate': 0.03,
+                        'n_estimators': 2500,
+                        'min_child_weight': 4,
+                        'subsample': 0.7,
+                        'colsample_bytree': 0.7,
+                        'gamma': 0.2,
+                        'early_stopping_rounds': 100,
+                        'verbosity': 0
+                    }
+                else:  # Long-term forecasts
+                    params = {
+                        'objective': 'reg:squarederror',
+                        'eval_metric': ['rmse', 'mae'],
+                        'max_depth': 6,
+                        'learning_rate': 0.02,
+                        'n_estimators': 3000,
+                        'min_child_weight': 5,
+                        'subsample': 0.6,
+                        'colsample_bytree': 0.6,
+                        'gamma': 0.3,
+                        'early_stopping_rounds': 100,
+                        'verbosity': 0
+                    }
+        
             # Prepare data for this horizon
             X_train, y_train = self.prepare_xy(train_data, h)
             

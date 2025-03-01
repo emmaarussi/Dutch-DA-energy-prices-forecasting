@@ -143,10 +143,37 @@ def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_ho
     # Add the current price
     features['current_price'] = df[price_col]
     
-    # Create price differences
+    # Enhanced price differences and momentum
     features['price_diff_1h'] = df[price_col].diff()
     features['price_diff_24h'] = df[price_col].diff(24)
     features['price_diff_168h'] = df[price_col].diff(168)  # week difference
+    
+    # Price momentum (percentage changes)
+    features['price_momentum_1h'] = df[price_col].pct_change()
+    features['price_momentum_24h'] = df[price_col].pct_change(24)
+    features['price_momentum_168h'] = df[price_col].pct_change(168)
+    
+    # Volatility features
+    for window in [24, 48, 168]:
+        features[f'volatility_{window}h'] = df[price_col].rolling(window=window).std() / df[price_col].rolling(window=window).mean()
+        features[f'range_{window}h'] = df[price_col].rolling(window=window).max() - df[price_col].rolling(window=window).min()
+    
+    # Price levels and extremes
+    for window in [24, 48, 168]:
+        features[f'price_max_{window}h'] = df[price_col].rolling(window=window).max()
+        features[f'price_min_{window}h'] = df[price_col].rolling(window=window).min()
+        features[f'price_quantile_25_{window}h'] = df[price_col].rolling(window=window).quantile(0.25)
+        features[f'price_quantile_75_{window}h'] = df[price_col].rolling(window=window).quantile(0.75)
+    
+    # Trend indicators
+    for window in [24, 48, 168]:
+        # Simple moving average crossovers
+        sma_short = df[price_col].rolling(window=window//4).mean()
+        sma_long = df[price_col].rolling(window=window).mean()
+        features[f'trend_sma_{window}h'] = (sma_short - sma_long) / sma_long
+        
+        # Exponential moving average
+        features[f'trend_ema_{window}h'] = df[price_col].ewm(span=window).mean()
     
     # Add targets
     features = pd.concat([features, targets], axis=1)
