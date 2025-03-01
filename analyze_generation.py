@@ -12,14 +12,12 @@ def load_data():
     path = os.path.join('data', 'generation_by_source.csv')
     df = pd.read_csv(path, parse_dates=['validfrom', 'validto'])
     
-    # Focus on top generation sources
+    # Map source types
     source_mapping = {
         0: 'total_generation',
-        2: 'fossil',
-        1: 'renewable',
-        17: 'wind_onshore',
-        12: 'solar',
-        4: 'wind_offshore'
+        1: 'wind',
+        2: 'solar',
+        17: 'wind_offshore'
     }
     
     # Filter for sources we're interested in

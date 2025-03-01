@@ -22,9 +22,9 @@ def load_and_merge_data():
     
     # Process generation data
     source_mapping = {
-        17: 'wind_onshore',
-        12: 'solar',
-        4: 'wind_offshore'
+        1: 'wind',
+        2: 'solar',
+        17: 'wind_offshore'
     }
     
     # Filter for renewable sources
@@ -80,7 +80,7 @@ def create_lagged_features(df, price_lags=None, generation_lags=None):
         df[f'price_lag_{lag}h'] = df['price_eur_per_mwh'].shift(lag)
     
     # Create generation lags for each source
-    generation_sources = ['wind_onshore', 'solar', 'wind_offshore']
+    generation_sources = ['wind', 'solar', 'wind_offshore']
     for source in generation_sources:
         if source in df.columns:
             for lag in generation_lags:
@@ -101,7 +101,7 @@ def create_rolling_statistics(df, windows=None):
         df[f'price_rolling_std_{window}h'] = df['price_eur_per_mwh'].rolling(window=window).std()
     
     # Create rolling stats for generation
-    generation_sources = ['wind_onshore', 'solar', 'wind_offshore']
+    generation_sources = ['wind', 'solar', 'wind_offshore']
     for source in generation_sources:
         if source in df.columns:
             for window in windows:
