@@ -66,9 +66,11 @@ To reproduce the analysis, follow these steps to process the data:
 
 ## Required Data
 
-The repository includes two essential data files:
-- `data/raw/generation_by_source_2023_2024.csv`
+The repository includes the raw prices data file:
 - `data/raw/raw_prices_2023_2024.csv`
+
+Due to file size limitations, the generation data file is not included in the repository. You will need to obtain the following file separately and place it in the `data/raw/` directory:
+- `generation_by_source_2023_2024.csv` (can be obtained from the Nederlandse Energie Dashboard)
 
 Other necessary data files will be generated through the processing pipeline.
 
