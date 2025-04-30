@@ -1,25 +1,25 @@
 # Dutch Energy Price Analysis and Forecasting
 
-This project implements a machine learning pipeline for analyzing and forecasting Dutch energy prices using data from the ENTSO-E API and generation data from the Nederlandse Energie Dashboard (NED). The system uses XGBoost to predict energy prices up to 24 hours ahead, incorporating both historical price patterns and energy generation data.
+This project implements a machine learning pipeline for analyzing and forecasting Dutch energy prices using data from the ENTSO-E API and generation data from the Nederlandse Energie Dashboard (NED). The system uses various models (XGBoost, AR, Linear) to predict energy prices for horizons between 14-38 hours ahead, incorporating both historical price patterns and energy generation data.
 
 ## Project Structure
 
 ```
 thesis-dutch-energy-analysis/
-├── data/                    # Data and model artifacts
-│   ├── models/             # Trained XGBoost models
-│   ├── raw_prices.csv      # Raw price data from ENTSO-E
-│   ├── generation_by_source.csv  # Generation data from NED
-│   ├── features_*.csv      # Processed feature sets
-│   └── *.png               # Generated visualizations
-├── energy_price_analysis.ipynb  # Interactive analysis notebook
-├── fetch_entsoe_data.py    # ENTSO-E API data fetching
-├── analyze_generation.py   # Generation data analysis
-├── prepare_features.py     # Price-only feature engineering
-├── prepare_multivariate_features.py  # Combined price and generation features
-├── train_model.py          # Model training and evaluation
-├── utils.py               # Helper functions and metrics
-└── requirements.txt       # Project dependencies
+├── data/
+│   ├── data_processing/    # Data processing scripts
+│   │   ├── process_raw_data.py
+│   │   ├── convert_units.py
+│   │   ├── prepare_features.py
+│   │   └── prepare_multivariate_features.py
+│   └── raw/                # Raw data files
+│       ├── generation_by_source_2023_2024.csv
+│       └── raw_prices_2023_2024.csv
+├── models_14_38/
+│   ├── ar/                # Autoregressive models
+│   ├── linear_no_lags/    # Linear regression models
+│   └── xgboost/           # XGBoost models
+└── utils/                 # Utility functions
 ```
 
 ## Setup and Installation
@@ -35,61 +35,42 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. Set up your ENTSO-E API key in `.env`:
-```
-ENTSOE_API_KEY=your_api_key_here
-```
+## Data Processing Pipeline
 
-## Usage
+To reproduce the analysis, follow these steps to process the data:
 
-### 1. Data Collection and Analysis
-Fetch energy price data from ENTSO-E:
-```bash
-python fetch_entsoe_data.py
-```
+1. **Process Raw Data**
+   ```bash
+   python data/data_processing/process_raw_data.py
+   ```
+   This script will process the raw data files and create the initial merged dataset.
 
-Analyze generation data patterns:
-```bash
-python analyze_generation.py
-```
+2. **Convert Units**
+   ```bash
+   python data/data_processing/convert_units.py
+   ```
+   This standardizes all measurements to consistent units.
 
-This will generate visualizations showing:
-- Daily and seasonal patterns in wind and solar generation
-- Correlation between generation sources and energy prices
-- Generation capacity trends over time
+3. **Prepare Features**
+   ```bash
+   python data/data_processing/prepare_features.py
+   python data/data_processing/prepare_multivariate_features.py
+   ```
+   These scripts create the base feature set and additional features for model training.
 
-### 2. Feature Engineering
-Process raw data and create features:
+4. **Model Training**
+   The processed features will be ready for use with any of the models in the `models_14_38` directory:
+   - XGBoost models: `models_14_38/xgboost/`
+   - Autoregressive models: `models_14_38/ar/`
+   - Linear models: `models_14_38/linear_no_lags/`
 
-For price-only model:
-```bash
-python prepare_features.py
-```
+## Required Data
 
-For multivariate model with generation data:
-```bash
-python prepare_multivariate_features.py
-```
+The repository includes two essential data files:
+- `data/raw/generation_by_source_2023_2024.csv`
+- `data/raw/raw_prices_2023_2024.csv`
 
-### 3. Model Training
-Train the XGBoost models:
-```bash
-python train_model.py
-```
-
-### 4. Interactive Analysis
-Use the Jupyter notebook for interactive analysis:
-```bash
-jupyter notebook energy_price_analysis.ipynb
-```
-
-## Data Files
-
-- `raw_prices.csv`: Original price data from ENTSO-E
-- `features_scaled.csv`: Processed features (standardized)
-- `features_unscaled.csv`: Processed features (original scale)
-- `cv_metrics.csv`: Cross-validation results
-- `test_predictions.csv`: Model predictions on test set
+Other necessary data files will be generated through the processing pipeline.
 
 ## Training Strategy
 

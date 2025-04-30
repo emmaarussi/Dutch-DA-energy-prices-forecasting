@@ -1,0 +1,178 @@
+"""
+Rolling window AR model for medium to long-term energy price forecasting.
+Uses the previous 24 hours of prices to predict future prices.
+Training window rolls forward each day to maintain recent data relevance.
+Train window (e.g., last 90 days)
+       ↓
+At forecast_start (e.g., 2024-01-03 08:00)
+       ↓
+Fit AR(24) on last 90 days
+       ↓
+Predict t+14h, t+24h, t+38h recursively
+       ↓
+Save predicted vs actual
+       ↓
+Next day (move forecast_start 1 day forward)
+       ↓
+Repeat
+
+
+
+"""
+import pandas as pd
+import numpy as np
+import sys
+import os
+from statsmodels.tsa.ar_model import AutoReg
+import matplotlib.pyplot as plt
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.api import OLS, add_constant
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from utils.utils import calculate_metrics, rolling_window_evaluation
+
+def forecast_day(train_data, forecast_start, window_size='90D', horizons=[14, 24, 38], lags=71):
+    """Make price forecasts for a single day using AR(71) model with rolling window"""
+    # Get training history up to forecast_start, but only use the last window_size of data
+    window_start = forecast_start - pd.Timedelta(window_size)
+    history = train_data[(train_data.index >= window_start) & 
+                        (train_data.index < forecast_start)]['current_price']
+    history = history.asfreq('h')
+    if len(history) < lags * 2:  # Need at least 2*lags points to train
+        return {}
+    
+    # Create lagged features
+    X_list = []
+    y_list = []
+    
+    for i in range(len(history) - lags):
+        x_i = history.iloc[i:i+lags].values
+        y_i = history.iloc[i+lags]
+        X_list.append(x_i)
+        y_list.append(y_i)
+    
+    X = np.array(X_list)
+    y = np.array(y_list)
+    X = add_constant(X)
+
+    # Fit OLS model on rolling window
+    model = AutoReg(history, lags=lags, old_names=False)
+    model_fit = model.fit()
+
+    params = model_fit.params
+
+    # Make predictions for each horizon
+    predictions = {}
+    last_values = history.iloc[-lags:].values
+    
+    # Predict recursively for all horizons
+    max_horizon = max(horizons)
+    all_preds = []
+    
+    for step in range(1, max_horizon + 1):
+        # Make prediction using last lags values
+        next_pred = params.iloc[0]  # intercept
+        for i in range(lags):
+            next_pred += params.iloc[i+1] * last_values[i]
+        
+        all_preds.append(next_pred)
+        
+        # Update last_values array: remove oldest, add new prediction
+        last_values = np.roll(last_values, -1)
+        last_values[-1] = next_pred
+        
+        if step in horizons:
+            target_time = forecast_start + pd.Timedelta(hours=step)
+            predictions[target_time] = next_pred
+    
+    # Perform residual analysis
+    residuals = model_fit.resid
+    
+    # Perform Ljung-Box test for residuals up to lag 71
+    lb_test = acorr_ljungbox(residuals, lags=[71], return_df=True)
+    print(f"\nLjung-Box test for window starting at {window_start}:")
+    print(lb_test)
+
+    
+    return predictions
+
+def main():
+    # Load data
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
+    data = pd.read_csv(features_path, index_col=0)
+    data.index = pd.to_datetime(data.index, utc=True)
+    data = data.sort_index()
+
+    # Split into training and test data
+    test_start = '2024-01-01'
+    train_data = data[data.index < test_start]
+    test_data = data[data.index >= test_start]
+
+    print(f"Full data range: {data.index.min()} to {data.index.max()}")
+    print(f"Test period: {test_data.index.min()} to {test_data.index.max()}")
+
+    # For each day at 12:00 in test period
+    all_predictions = []
+    horizons = [14, 24, 38]
+    window_sizes = ['30D', '90D', '180D']
+
+    for window_size in window_sizes:
+        print(f"\nEvaluating with {window_size} window:")
+        window_predictions = []
+
+        for day in pd.date_range(test_data.index.min(), test_data.index.max(), freq='D'):
+            forecast_start = pd.Timestamp(day.date()).replace(hour=12, tzinfo=test_data.index.tzinfo)
+            
+            if forecast_start in test_data.index:
+                # Make predictions for this day
+                predictions = forecast_day(data, forecast_start, window_size, horizons)
+                
+                # Record predictions with their actual values
+                for target_time, pred_price in predictions.items():
+                    if target_time in test_data.index:
+                        actual_price = test_data.loc[target_time, 'current_price']
+                        window_predictions.append({
+                            'window_size': window_size,
+                            'forecast_start': forecast_start,
+                            'target_time': target_time,
+                            'horizon': (target_time - forecast_start).total_seconds() / 3600,
+                            'predicted': pred_price,
+                            'actual': actual_price
+                        })
+
+        # Calculate metrics for this window size
+        results_df = pd.DataFrame(window_predictions)
+        
+        print(f"\nResults for {window_size} window:")
+        for horizon in horizons:
+            horizon_results = results_df[results_df['horizon'] == horizon]
+            metrics = calculate_metrics(horizon_results['actual'], horizon_results['predicted'])
+            
+            print(f"\nt+{horizon}h horizon:")
+            print(f"Number of predictions: {len(horizon_results)}")
+            print(f"RMSE: {metrics['RMSE']:.2f}")
+            print(f"SMAPE: {metrics['SMAPE']:.2f}%")
+            print(f"R2: {metrics['R2']:.4f}")
+            print(f"Mean actual price: {horizon_results['actual'].mean():.2f}")
+            print(f"Mean predicted price: {horizon_results['predicted'].mean():.2f}")
+
+            # Plot predictions vs actuals
+            plt.figure(figsize=(15, 6))
+            plt.plot(horizon_results['target_time'], horizon_results['actual'], 
+                    label='Actual', alpha=0.7)
+            plt.plot(horizon_results['target_time'], horizon_results['predicted'], 
+                    label=f'Predicted ({window_size} window)', alpha=0.7)
+            plt.title(f'Rolling AR(71) Model: Window={window_size}, Horizon=t+{horizon}h')
+            plt.xlabel('Target Time')
+            plt.ylabel('Price (EUR/MWh)')
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+            plt.savefig(f'models_14_38/ar/plots_ar_rolling/predictions_w{window_size}_h{horizon}.png')
+            plt.close()
+
+        all_predictions.extend(window_predictions)
+
+if __name__ == "__main__":
+    os.makedirs('models_14_38/ar/plots_ar_rolling', exist_ok=True)
+    main()

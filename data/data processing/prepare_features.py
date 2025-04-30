@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import holidays
 from sklearn.preprocessing import StandardScaler
 import joblib
+import os
 
 def create_time_features(df):
     """Create time-based features from the timestamp index.
@@ -111,7 +112,7 @@ def create_lag_features(df, price_col='price_eur_per_mwh', lags=[1, 2, 3, 24, 48
     
     return features
 
-def create_target_features(df, price_col='price_eur_per_mwh', forecast_horizon=24):
+def create_target_features(df, price_col='price_eur_per_mwh', forecast_horizon=38):
     """Create target variables for different forecast horizons."""
     
     targets = pd.DataFrame(index=df.index)
@@ -122,7 +123,7 @@ def create_target_features(df, price_col='price_eur_per_mwh', forecast_horizon=2
     
     return targets
 
-def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_horizon=24):
+def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_horizon=38):
     """Prepare all features for training."""
     
     print("Creating features...")
@@ -178,7 +179,8 @@ def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_ho
     # Add targets
     features = pd.concat([features, targets], axis=1)
     
-    # Drop rows with NaN values (due to lagging)
+    # Handle infinities and NaN values
+    features = features.replace([np.inf, -np.inf], np.nan)
     features = features.dropna()
     
     print(f"Created {len(features.columns)} features:")
@@ -190,32 +192,14 @@ def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_ho
     
     return features
 
-def scale_features(features, exclude_cols=None, save_scaler=True):
-    """Scale features using StandardScaler."""
-    
-    if exclude_cols is None:
-        exclude_cols = []
-    
-    # Separate columns to scale and not to scale
-    cols_to_scale = [col for col in features.columns if col not in exclude_cols]
-    
-    # Initialize scaler
-    scaler = StandardScaler()
-    
-    # Scale features
-    scaled_features = features.copy()
-    scaled_features[cols_to_scale] = scaler.fit_transform(features[cols_to_scale])
-    
-    if save_scaler:
-        joblib.dump(scaler, 'data/feature_scaler.joblib')
-        print("\nScaler saved to data/feature_scaler.joblib")
-    
-    return scaled_features, scaler
-
 def main():
+    # Set up paths
+    base_dir = '/Users/emmaarussi/CascadeProjects/thesis-dutch-energy-analysis'
+    data_dir = os.path.join(base_dir, 'data')
+    
     # Load the price data
     print("Loading data...")
-    df = pd.read_csv('data/raw_prices.csv')
+    df = pd.read_csv(os.path.join(data_dir, 'raw/raw_prices_2023_2024.csv'))
     df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True)
     df.set_index('timestamp', inplace=True)
     df.index = df.index.tz_convert('Europe/Amsterdam')
@@ -223,18 +207,15 @@ def main():
     # Prepare features
     features = prepare_features_for_training(df)
     
-    # Scale features, excluding target variables
-    target_cols = [col for col in features.columns if col.startswith('target_')]
-    scaled_features, _ = scale_features(features, exclude_cols=target_cols)
-    
     # Save features
-    features.to_csv('data/features_unscaled.csv')
-    scaled_features.to_csv('data/features_scaled.csv')
+    features_dir = os.path.join(data_dir, 'features')
+    os.makedirs(features_dir, exist_ok=True)
+    
+    features.to_csv(os.path.join(features_dir, 'features_unscaled.csv'))
     
     print("\nFeatures saved to:")
-    print("- data/features_unscaled.csv")
-    print("- data/features_scaled.csv")
-    
+    print(f"- {os.path.join(features_dir, 'features_unscaled.csv')}")
+ 
     # Print sample of features
     print("\nSample of features (first 5 rows):")
     print(features.head())

@@ -1,0 +1,18 @@
+
+WIND FORECAST ANALYSIS:
+Mean actual value: 2174.01 MW
+Mean forecast value: 1201.91 MW
+Correlation: 0.043
+---
+
+SOLAR FORECAST ANALYSIS:
+Mean actual value: 2280.10 MW
+Mean forecast value: 1926.83 MW
+Correlation: -0.202
+---
+
+CONSUMPTION FORECAST ANALYSIS:
+Mean actual value: 12757.10 MW
+Mean forecast value: 10930.29 MW
+Correlation: 0.506
+---

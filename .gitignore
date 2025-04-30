@@ -1,29 +1,49 @@
+# Data files
+data/raw/*
+!data/raw/generation_by_source_2023_2024.csv
+!data/raw/raw_prices_2023_2024.csv
+data/processed/*
+data/features/*
+
+# Backup files
+backup_old_models/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
 venv/
-ENV/
+env/
+.env/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Jupyter Notebook
 .ipynb_checkpoints
-*.ipynb_checkpoints/
 
-# VS Code
-.vscode/
-
-# macOS
-.DS_Store
-
-# Environment variables
-.env
-
-# Project specific
-data/*.csv
-data/models/
-data/*.joblib
-data/*.png
-data/*.jpg
-data/*.jpeg
+# Model files
+*.joblib
+*.pkl
