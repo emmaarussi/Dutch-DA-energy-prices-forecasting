@@ -16,7 +16,7 @@ thesis-dutch-energy-analysis/
 │       ├── generation_by_source_2023_2024.csv
 │       └── raw_prices_2023_2024.csv
 ├── models_14_38/
-│   ├── ar/                # Autoregressive models
+│   ├── ar/                # Autoregressive/linear models
 │   ├── linear_no_lags/    # Linear regression models
 │   └── xgboost/           # XGBoost models
 └── utils/                 # Utility functions
@@ -70,13 +70,15 @@ The repository includes the raw prices data file:
 - `data/raw/raw_prices_2023_2024.csv`
 
 Due to file size limitations, the generation data file is not included in the repository. You will need to obtain the following file separately and place it in the `data/raw/` directory:
-- `generation_by_source_2023_2024.csv` (can be obtained from the Nederlandse Energie Dashboard)
+- `generation_by_source_2023_2024.csv` (can be obtained from the Nederlandse Energie Dashboard, but please email e.s.arussi@student.vu.nl for the file)
 
 Other necessary data files will be generated through the processing pipeline.
 
 ## Training Strategy
 
-The model uses an expanding window time series cross-validation strategy to ensure robust performance and prevent data leakage:
+The models use rolling window time series cross-validation strategy to ensure robust performance and mimic real world day-ahead trading strategy
+
+The rolling strategies differ, since for computational power purposes, having a new training fold every day for the XGBOOST is a bit slow. Therefore now for model tweaking purposes, the cross validation is done with folds of 7 days, summing to a total of 12 folds over a test period of 3 months
 
 ```
 Fold 1:
@@ -88,20 +90,11 @@ Fold 2:
 - Validation: 2025-01-30 → 2025-02-06 (next 7 days)
 ```
 
-This approach:
-- Maintains temporal ordering of data
-- Uses expanding windows to leverage more historical data over time
-- Validates on 7-day windows to capture weekly patterns
-- Multiple folds ensure robust performance evaluation
-- Simulates real-world forecasting scenarios
+
 
 ## Model Performance
 
-The model achieves excellent Mean Absolute Percentage Error (MAPE) across all forecast horizons:
-
-- Short-term (1-6 hours): 4.4-9.9%
-- Medium-term (7-12 hours): 9.7-10.4%
-- Long-term (13-24 hours): 10.1-11%
+The models performance is evaluated using adapted SMAPE  for correction of infinite values (which occur when prices and predicted prices get close to zero), as well as standard RMSE and R2. 
 
 ## Visualizations
 
@@ -210,7 +203,9 @@ graph TD
    - Day-to-day changes
    - Week-to-week changes
 
-All features (except target variables) are standardized using `StandardScaler` before model training.
+Features are still under discussion. Due to the 14-38 forecast horizons, the features should be data-leakage proof, this is a WIP
+
+next up (WIP is probabilitistic forecasting instead of point forecasting, and conformal prediction for CI construction.
 
 ## License
 
