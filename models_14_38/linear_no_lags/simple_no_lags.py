@@ -6,6 +6,11 @@ without any lagged price variables. Features include:
 - Month of year (sine and cosine encoded)
 - Calendar effects (is_weekend, is_holiday)
 - Time of day effects (is_morning, is_evening)
+
+
+What we want to get here is a super simple baseline model with no assumption on the errors, unlike the AR models.
+Also we are only looking at simple dummies, no interaction effects or higher order terms.
+
 """
 import pandas as pd
 import numpy as np
