@@ -46,6 +46,17 @@ def create_target_features(df, price_col='price_eur_per_mwh', forecast_horizon=3
         targets[f'target_t{h}'] = df[price_col].shift(-h)
     return targets
 
+def create_price_lagged_features(df):
+    """Create lagged features for all relevant generation and forecast signals."""
+    lags = list(range(1, 169))  # All lags from 1h to 168h (1 week)
+    sources = ['price_eur_per_mwh']
+    df = df.copy()
+    for source in sources:
+        if source in df.columns:
+            for lag in lags:
+                df[f'{source}_lag_{lag}h'] = df[source].shift(lag)
+    return df
+
 def create_generation_lagged_features(df):
     """Create lagged features for all relevant generation and forecast signals."""
     lags = [1, 2, 3, 6, 12, 24, 48, 168]  # 1h to weekly
@@ -64,8 +75,8 @@ def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_ho
     holiday_features = create_holiday_features(df)
     targets = create_target_features(df, price_col, forecast_horizon)
     generation_lags = create_generation_lagged_features(df)
-
-    features = pd.concat([time_features, holiday_features, generation_lags, targets], axis=1)
+    price_lags = create_price_lagged_features(df)
+    features = pd.concat([time_features, holiday_features, generation_lags, price_lags, targets], axis=1)
     features['current_price'] = df[price_col]
 
     # Clean up
