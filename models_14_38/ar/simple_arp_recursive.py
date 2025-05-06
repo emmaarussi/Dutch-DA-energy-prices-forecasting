@@ -17,6 +17,10 @@ Repeat
 The model uses 12-month rolling windows for training,
 evaluating on horizons from t+14 to t+38.
 
+what we see here is that the forecast produces a flat line. This is because we are not updating the model parameters after each prediction.
+This is a clear difference with the other ar models made is this study. Those are more responsive and adaptive to changes in the data.
+What we take from this is that there is a clear gain in updating model over time, also when applying XGboost. However, updating too often (daily) is already a heavy task for a simple regression, let alone a more complex model like XGboost.
+Finding the balance between updating frequency, window sizes and model complexity is key.
 """
 import pandas as pd
 import numpy as np
@@ -136,6 +140,7 @@ def main():
         print(f"\nt+{horizon}h horizon:")
         print(f"Number of predictions: {len(horizon_results)}")
         print(f"RMSE: {metrics['RMSE']:.2f}")
+        print(f"MAE: {metrics['MAE']:.2f}")
         print(f"SMAPE: {metrics['SMAPE']:.2f}%")
         print(f"R2: {metrics['R2']:.4f}")
         print(f"Mean actual price: {horizon_results['actual'].mean():.2f}")

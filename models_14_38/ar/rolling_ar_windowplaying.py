@@ -1,12 +1,12 @@
 """
 Rolling window AR model for medium to long-term energy price forecasting.
-Uses the previous 24 hours of prices to predict future prices.
+Uses the previous 71 hours of prices to predict future prices.
 Training window rolls forward each day to maintain recent data relevance.
 Train window (e.g., last 365 days)
        ↓
 At forecast_start (e.g., 2024-01-03 08:00)
        ↓
-Fit AR(24) on last 365 days
+Fit AR(71) on last 365 days
        ↓
 Predict t+14h, t+24h, t+38h recursively
        ↓
@@ -15,6 +15,10 @@ Save predicted vs actual
 Next day (move forecast_start 1 day forward)
        ↓
 Repeat
+
+what we see here is that the model actually kind of reproduces the actual data, but with a lag in time. This is quite expectable, since AR with 71 lags, will probably overfit completely, thus for 14 hours ahead, it will think that the price will behave exactly the same.
+There is also a lung box test, to test for white noiseness of the errors. here we clearly see that the errors are not white noise, but they are autocorrelated.
+Even though the model lag number was selected with AIC in simple_arp_recursive.py.
 
 
 """
