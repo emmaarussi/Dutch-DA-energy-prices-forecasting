@@ -1,6 +1,7 @@
 """
 Simple linear model combining:
-1. Significant price lags (selected per horizon from AR analysis)
+1. Significant price lags, here we are looking at lags of the price that are either the closes one available form the horizon distance, or lags that are exactly 24, 48 or 168 away from the predicted horizon.
+
 2. Calendar features (from dummy model)
 
 Features:
@@ -10,6 +11,9 @@ Features:
 - Month of year (sine and cosine encoded)
 - Calendar effects (is_weekend, is_holiday)
 - Time of day effects (is_morning, is_evening)
+
+Why do this you might ask, well, perhaps it simply works, and some literature from 2005 said its worth trying
+so here we are. We are not even AICing this, its just based on a hunch.
 """
 import pandas as pd
 import numpy as np

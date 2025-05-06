@@ -5,6 +5,10 @@ Linear model with lagged price values respective of the forecast horizon
 - Recent hours: price_lag_1h, price_lag_2h, price_lag_3h
 - Daily patterns: price_lag_24h, price_lag_48h
 - Weekly pattern: price_lag_168h
+
+Rolling forecast with a window size of 90D and horizons [14, 24, 38]
+predicts step wise for each horizon 1 value at a time, then updates the window and continues. 
+quite a slow model since it makes about 1400 predictions per horizon
  --
 """
 
