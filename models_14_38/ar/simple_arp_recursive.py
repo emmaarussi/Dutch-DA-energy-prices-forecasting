@@ -14,7 +14,7 @@ Next day (move forecast_start 1 day forward)
        ↓
 Repeat
 
-The model uses 14-month rolling windows for training,
+The model uses 12-month rolling windows for training,
 evaluating on horizons from t+14 to t+38.
 
 """
@@ -35,7 +35,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 
 def forecast_day(train_data, forecast_start, horizons=[14, 24, 38]):
     """Forecast using AutoReg with automatic lag selection"""
-    history = train_data[train_data.index < forecast_start]['current_price']
+    history = train_data[train_data.index < forecast_start]['price_eur_per_mwh']
     history = history.asfreq('h')
 
     # --- Auto lag selection ---
@@ -115,7 +115,7 @@ def main():
             # Record predictions with their actual values
             for target_time, pred_price in predictions.items():
                 if target_time in test_data.index:
-                    actual_price = test_data.loc[target_time, 'current_price']
+                    actual_price = test_data.loc[target_time, 'price_eur_per_mwh']
                     all_predictions.append({
                         'forecast_start': forecast_start,
                         'target_time': target_time,
@@ -151,6 +151,7 @@ def main():
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
+        os.makedirs('models_14_38/ar/plots_arp_recursive', exist_ok=True)
         plt.savefig(f'models_14_38/ar/plots_arp_recursive/predictions_h{horizon}.png')
         plt.close()
             
@@ -171,7 +172,7 @@ def main():
             print("Series is non-stationary.")
 
         #check stationarity testdata
-        result = adfuller(test_data['current_price'].dropna())
+        result = adfuller(test_data['price_eur_per_mwh'].dropna())
         print(f"ADF Statistic test data: {result[0]}")
         print(f"p-value test data: {result[1]}")
         
@@ -181,11 +182,11 @@ def main():
             print("Series is non-stationary.")
 
         #check acf traindata
-        plot_acf(train_data['current_price'].dropna(), lags=100)
+        plot_acf(train_data['price_eur_per_mwh'].dropna(), lags=100)
         plt.show()
 
         #check acf testdata
-        plot_acf(test_data['current_price'].dropna(), lags=100)
+        plot_acf(test_data['price_eur_per_mwh'].dropna(), lags=100)
         plt.show()
 
 if __name__ == "__main__":

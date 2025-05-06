@@ -1,3 +1,44 @@
+"""
+XGBoost-based probabilistic forecasting using quantile regression.
+This model predicts multiple quantiles (0.1, 0.5, 0.9) to provide uncertainty estimates
+for electricity price forecasts.
+"""
+
+
+
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+import os
+import sys
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import RobustScaler
+from pathlib import Path
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from utils.utils import calculate_metrics
+
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+import os
+import sys
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import RobustScaler
+from pathlib import Path
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from utils.utils import calculate_metrics
+
+
+import pandas as pd
+import numpy as np
+import xgboost as xgb
+import os
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import RobustScaler
+from utils.utils import calculate_metrics
+
 
 
 
@@ -11,8 +52,8 @@ class XGBoostQuantileForecaster:
     def quantile_loss(self, q):
         def loss(preds, dtrain):
             labels = dtrain.get_label()
-            e = labels - preds
-            grad = np.where(e < 0, -q, 1 - q)
+            errors = labels - preds
+            grad = np.where(errors < 0, -q, 1 - q)
             hess = np.ones_like(labels)
             return grad, hess
         return loss
@@ -52,20 +93,19 @@ class XGBoostQuantileForecaster:
             X_train, y_train = self.prepare_data(train_window, horizon)
             X_test, y_test = self.prepare_data(test_window, horizon)
 
-            print(f"\n🔎 Horizon t+{horizon}h")
+            print(f"\n\U0001F50E Horizon t+{horizon}h")
             print("  y_train min/max:", y_train.min(), y_train.max())
             print("  y_test  min/max:", y_test.min(), y_test.max())
 
             if len(X_train) < 100 or len(X_test) == 0:
                 continue
 
-            y_train = y_train.clip(lower=0)  # Clip target
-            y_test = y_test.clip(lower=0)
+            y_train_clipped = y_train.clip(lower=0)
 
             X_train_scaled = self.scaler.fit_transform(X_train)
             X_test_scaled = self.scaler.transform(X_test)
 
-            dtrain = xgb.DMatrix(X_train_scaled, label=y_train)
+            dtrain = xgb.DMatrix(X_train_scaled, label=y_train_clipped)
             dtest = xgb.DMatrix(X_test_scaled)
 
             quantile_predictions = {}
@@ -85,9 +125,8 @@ class XGBoostQuantileForecaster:
                     self.models[(horizon, q)] = model
                     quantile_predictions[q] = model.predict(dtest)
 
-                    if horizon == 14:
-                        print(f"Sample predictions (q={q}):", quantile_predictions[q][:5])
-                        print(f"Sample actuals:", y_test.iloc[:5].values)
+                    print(f"Sample predictions (q={q}):", quantile_predictions[q][:5])
+                    print(f"Sample actuals:", y_test.iloc[:5].values)
 
                 except Exception as e:
                     print(f"\u26a0\ufe0f Error training model for t+{horizon}h, q={q}: {e}")
@@ -146,3 +185,34 @@ class XGBoostQuantileForecaster:
         os.makedirs(output_dir, exist_ok=True)
         plt.savefig(os.path.join(output_dir, f'quantile_predictions_t{horizon}.png'))
         plt.close()
+
+
+
+def main():
+    # Load data
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
+    df = pd.read_csv(features_path, index_col=0)
+    df.index = pd.to_datetime(df.index)
+    
+    # Define train-test split
+    train_start = pd.Timestamp('2023-01-08', tz='Europe/Amsterdam')
+    train_end = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
+    test_start = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
+    test_end = pd.Timestamp('2024-03-01', tz='Europe/Amsterdam')
+    
+    train_df = df[train_start:train_end]
+    test_df = df[test_start:test_end]
+    
+    # Initialize and train model
+    model = XGBoostQuantileForecaster()
+    results_df = model.train_and_predict(train_df, test_df, '12m')
+    
+    
+    # Plot and evaluate results for each horizon
+    for horizon in model.horizons:
+        model.plot_predictions(results_df, horizon)
+        model.evaluate_predictions(results_df, horizon)
+
+if __name__ == "__main__":
+    main()

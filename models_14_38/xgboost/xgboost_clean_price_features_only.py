@@ -1,18 +1,8 @@
 """
-XGBoost model for medium to long-term energy price forecasting using new feature set called multivariate_features.csv.
+XGBoost model for medium to long-term energy price forecasting using only price and calendar features.
+Excludes all features related to wind, coal, solar, and consumption.
 
-It uses the utils.utils module for utility functions calculate_metrics, plot_feature_importance, plot_predictions, plot_error_distribution, rolling_window_evaluation
-
-Features:
-1. Historical price data
-2. Wind generation (total)
-3. Solar generation
-4. Consumption
-5. Calendar features
-
-The model uses 12-month rolling windows for training, shifted by 1 week, evaluating on horizons from t+14 to t+38.
-
-
+It uses the utils.utils module for utility functions calculate_metrics, plot_feature_importance.
 """
 import pandas as pd
 import numpy as np
@@ -28,9 +18,21 @@ class XGBoostclean:
         self.horizons = horizons
         
     def prepare_data(self, data, horizon):
-        """Prepare features and target for a specific horizon"""
-        # Get all columns except target columns
-        feature_cols = [col for col in data.columns if not col.startswith('target_t')]
+        """Prepare features and target for a specific horizon, excluding wind, coal, solar, and consumption features"""
+        # Define excluded feature patterns
+        excluded_patterns = [
+            'wind', 'Wind', 'WIND',
+            'solar', 'Solar', 'SOLAR',
+            'coal', 'Coal', 'COAL',
+            'consumption', 'Consumption', 'CONSUMPTION',
+            'load', 'Load', 'LOAD'
+        ]
+        
+        # Get all columns except target columns and excluded features
+        feature_cols = [col for col in data.columns 
+                       if not col.startswith('target_t') and 
+                       not any(pattern in col for pattern in excluded_patterns)]
+        
         X = data[feature_cols]
         y = data[f'target_t{horizon}']
         return X, y
@@ -148,7 +150,7 @@ def main():
         print(f"R2: {metrics['R2']:.4f}")
 
     # Create output directory
-    out_dir = 'models_14_38/xgboost/plots/cleanfull'
+    out_dir = 'models_14_38/xgboost/plots/price_only'
     os.makedirs(out_dir, exist_ok=True)
 
     # Plot feature importance for each horizon

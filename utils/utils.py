@@ -109,9 +109,6 @@ def plot_feature_importance(importance_df, top_n=20, title='Feature Importance',
     if filename:
         plt.savefig(filename)
 
-
-
-
 def rolling_window_evaluation_recursive(model, data, window_size='365D', step_size='7D', test_size='7D'):
     """Perform rolling window cross-validation for recursive models."""
     # Convert string periods to timedelta
@@ -250,3 +247,19 @@ def rolling_window_evaluation(self, data, window_size='365D', step_size='7D', te
         }
     
     return final_metrics, all_importance, all_predictions
+
+
+def plot_predictions(data, y_true, y_pred, horizon, title):
+    """Plot actual vs predicted values for a specific horizon."""
+    plt.figure(figsize=(15, 6))
+    plt.plot(data.index, y_true, label='Actual', alpha=0.7)
+    plt.plot(data.index, y_pred, label='Predicted', alpha=0.7)
+    plt.title(title)
+    plt.xlabel('Date')
+    plt.ylabel('Price (EUR/MWh)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    return plt
+
+

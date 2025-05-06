@@ -50,7 +50,7 @@ class XGBoostHyperopt:
         predictions = model.predict(valid_x)
         metrics = calculate_metrics(valid_y, predictions)
         
-        # We want to minimize RMSE
+        # minimize RMSE
         return {'loss': metrics['RMSE'], 'status': STATUS_OK}
         
     def optimize_hyperparameters(self, train_data, valid_data, horizon, max_evals=100):

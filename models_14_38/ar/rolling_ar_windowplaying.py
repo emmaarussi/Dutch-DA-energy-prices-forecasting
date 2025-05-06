@@ -2,11 +2,11 @@
 Rolling window AR model for medium to long-term energy price forecasting.
 Uses the previous 24 hours of prices to predict future prices.
 Training window rolls forward each day to maintain recent data relevance.
-Train window (e.g., last 90 days)
+Train window (e.g., last 365 days)
        ↓
 At forecast_start (e.g., 2024-01-03 08:00)
        ↓
-Fit AR(24) on last 90 days
+Fit AR(24) on last 365 days
        ↓
 Predict t+14h, t+24h, t+38h recursively
        ↓
@@ -15,7 +15,6 @@ Save predicted vs actual
 Next day (move forecast_start 1 day forward)
        ↓
 Repeat
-
 
 
 """
@@ -28,9 +27,9 @@ import matplotlib.pyplot as plt
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.api import OLS, add_constant
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from utils.utils import calculate_metrics, rolling_window_evaluation
+from utils.utils import calculate_metrics, plot_predictions, rolling_window_evaluation
 
-def forecast_day(train_data, forecast_start, window_size='90D', horizons=[14, 24, 38], lags=71):
+def forecast_day(train_data, forecast_start, window_size='365D', horizons=[14, 24, 38], lags=71):
     """Make price forecasts for a single day using AR(71) model with rolling window"""
     # Get training history up to forecast_start, but only use the last window_size of data
     window_start = forecast_start - pd.Timedelta(window_size)
@@ -88,11 +87,14 @@ def forecast_day(train_data, forecast_start, window_size='90D', horizons=[14, 24
     residuals = model_fit.resid
     
     # Perform Ljung-Box test for residuals up to lag 71
-    lb_test = acorr_ljungbox(residuals, lags=[71], return_df=True)
-    print(f"\nLjung-Box test for window starting at {window_start}:")
-    print(lb_test)
+    ##lb_test = acorr_ljungbox(residuals, lags=[71], return_df=True)
+    ## print(f"\nLjung-Box test for window starting at {window_start}:")
+    ##print(lb_test)
 
-    
+    print("Forecast start:", forecast_start)
+    print("History ends:", history.index.max())
+    print("Forecast targets:", list(predictions.keys())[:3])
+
     return predictions
 
 def main():
@@ -114,7 +116,7 @@ def main():
     # For each day at 12:00 in test period
     all_predictions = []
     horizons = [14, 24, 38]
-    window_sizes = ['30D', '90D', '180D']
+    window_sizes = ['30D', '90D', '180D', '365D']
 
     for window_size in window_sizes:
         print(f"\nEvaluating with {window_size} window:")
@@ -143,36 +145,24 @@ def main():
         # Calculate metrics for this window size
         results_df = pd.DataFrame(window_predictions)
         
-        print(f"\nResults for {window_size} window:")
-        for horizon in horizons:
-            horizon_results = results_df[results_df['horizon'] == horizon]
-            metrics = calculate_metrics(horizon_results['actual'], horizon_results['predicted'])
-            
-            print(f"\nt+{horizon}h horizon:")
-            print(f"Number of predictions: {len(horizon_results)}")
-            print(f"RMSE: {metrics['RMSE']:.2f}")
-            print(f"SMAPE: {metrics['SMAPE']:.2f}%")
-            print(f"R2: {metrics['R2']:.4f}")
-            print(f"Mean actual price: {horizon_results['actual'].mean():.2f}")
-            print(f"Mean predicted price: {horizon_results['predicted'].mean():.2f}")
+       # Plot AR predictions just like XGBoost
+        plt.figure(figsize=(15, 6))
+        plt.plot(results_df['target_time'], results_df['actual'], label='Actual', alpha=0.7)
+        plt.plot(results_df['target_time'], results_df['predicted'], label='Predicted', alpha=0.7)
+        plt.title(f'Actual vs Predicted Prices Over Time (AR, {window_size} window, t+{horizons[0]}h)')
+        plt.xlabel('Date')
+        plt.ylabel('Price (EUR/MWh)')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
 
-            # Plot predictions vs actuals
-            plt.figure(figsize=(15, 6))
-            plt.plot(horizon_results['target_time'], horizon_results['actual'], 
-                    label='Actual', alpha=0.7)
-            plt.plot(horizon_results['target_time'], horizon_results['predicted'], 
-                    label=f'Predicted ({window_size} window)', alpha=0.7)
-            plt.title(f'Rolling AR(71) Model: Window={window_size}, Horizon=t+{horizon}h')
-            plt.xlabel('Target Time')
-            plt.ylabel('Price (EUR/MWh)')
-            plt.legend()
-            plt.grid(True)
-            plt.tight_layout()
-            plt.savefig(f'models_14_38/ar/plots_ar_rolling/predictions_w{window_size}_h{horizon}.png')
-            plt.close()
-
-        all_predictions.extend(window_predictions)
+        # Save to the same kind of directory structure
+        os.makedirs('models_14_38/ar/plots/plots_ar_rolling', exist_ok=True)
+        plt.savefig(f'models_14_38/ar/plots/plots_ar_rolling/predictions_over_time_{window_size}_{horizons[0]}h.png', dpi=300, bbox_inches='tight')
+        plt.close()
 
 if __name__ == "__main__":
     os.makedirs('models_14_38/ar/plots_ar_rolling', exist_ok=True)
     main()
+
+
