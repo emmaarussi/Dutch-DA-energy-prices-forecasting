@@ -6,20 +6,35 @@ This project implements a machine learning pipeline for analyzing and forecastin
 
 ```
 thesis-dutch-energy-analysis/
+├── analysis/              # Analysis scripts and outputs
+│   └── correlation_plots/ # Feature correlation visualizations
 ├── data/
-│   ├── data_processing/    # Data processing scripts
+│   ├── analysis_output/   # Analysis results and metrics
+│   ├── data_processing/   # Data processing scripts
 │   │   ├── process_raw_data.py
 │   │   ├── convert_units.py
 │   │   ├── prepare_features.py
 │   │   └── prepare_multivariate_features.py
-│   └── raw/                # Raw data files
-│       ├── generation_by_source_2023_2024.csv
-│       └── raw_prices_2023_2024.csv
-├── models_14_38/
-│   ├── ar/                # Autoregressive/linear models
-│   ├── linear_no_lags/    # Linear regression models
-│   └── xgboost/           # XGBoost models
-└── utils/                 # Utility functions
+│   ├── processed/         # Processed datasets
+│   └── raw/              # Raw data files
+├── documentation/        # Additional documentation
+├── models_14_38/        # Models for 14-38h forecasting
+│   ├── ar/              # Autoregressive models
+│   │   ├── linear_setlags_rollingwindowstepsizeone.py
+│   │   ├── rolling_ar_windowplaying.py
+│   │   └── simple_arp_recursive.py
+│   ├── Linear_with_lags/ # Linear models with lagged features
+│   ├── linear_no_lags/   # Baseline linear models
+│   └── xgboost/          # XGBoost implementations
+│       ├── xgboost_clean_full_features.py     # Full feature set
+│       ├── xgboost_clean_price_features_only.py # Price-only features
+│       ├── xgboost_CV_multiple_window_sizes.py # CV experiments
+│       ├── xgboost_hyperopt.py                # Hyperparameter tuning
+│       ├── xgboost_quantile_forecasting.py    # Probabilistic forecasting
+│       └── xgboost_simple.py                  # Baseline implementation
+├── plots/               # General visualization outputs
+├── predictions/         # Model prediction outputs
+└── utils/              # Utility functions
 ```
 
 ## Setup and Installation
@@ -60,9 +75,23 @@ To reproduce the analysis, follow these steps to process the data:
 
 4. **Model Training**
    The processed features will be ready for use with any of the models in the `models_14_38` directory:
-   - XGBoost models: `models_14_38/xgboost/`
-   - Autoregressive models: `models_14_38/ar/`
-   - Linear models: `models_14_38/linear_no_lags/`
+   
+   **XGBoost Models** (`models_14_38/xgboost/`):
+   - Base implementation: `xgboost_simple.py`
+   - Full feature set: `xgboost_clean_full_features.py`
+   - Price-only features: `xgboost_clean_price_features_only.py`
+   - Probabilistic forecasting: `xgboost_quantile_forecasting.py`
+   - Cross-validation experiments: `xgboost_CV_multiple_window_sizes.py`
+   - Hyperparameter optimization: `xgboost_hyperopt.py`
+
+   **Autoregressive Models** (`models_14_38/ar/`):
+   - Rolling window AR: `rolling_ar_windowplaying.py`
+   - Simple AR with recursive prediction: `simple_arp_recursive.py`
+   - Linear model with set lags: `linear_setlags_rollingwindowstepsizeone.py`
+
+   **Linear Models**:
+   - Baseline without lags: `models_14_38/linear_no_lags/`
+   - With lagged features: `models_14_38/Linear_with_lags/`
 
 ## Required Data
 
