@@ -30,6 +30,22 @@ def create_price_time_features(df):
     features['is_weekend'] = features['day_of_week'].isin([5, 6])
     return features
 
+
+def create_rolling_statistics(df, price_col='price_eur_per_mwh', windows=[3, 6, 12, 24, 48, 72, 168]):
+    """Create rolling statistics for price data."""
+    features = pd.DataFrame(index=df.index)
+    for window in windows:
+        features[f'rolling_mean_{window}h'] = df[price_col].rolling(window=window).mean()
+        features[f'rolling_std_{window}h'] = df[price_col].rolling(window=window).std()
+    return features
+
+def create_price_differences(df, price_col='price_eur_per_mwh', windows=[1, 2, 3, 24, 48, 72, 168]):
+    """Create price differences for time series forecasting."""
+    features = pd.DataFrame(index=df.index)
+    for window in windows:
+        features[f'price_diff_{window}h'] = df[price_col].diff(window)
+    return features
+
 def create_holiday_features(df):
     """Create holiday-related features for the Netherlands."""
     nl_holidays = holidays.NL()

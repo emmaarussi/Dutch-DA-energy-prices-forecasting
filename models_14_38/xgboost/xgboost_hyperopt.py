@@ -30,7 +30,7 @@ class XGBoostHyperopt:
         """Prepare features and target for a specific horizon"""
         feature_cols = [col for col in data.columns if not col.startswith('target_t')]
         X = data[feature_cols]
-        y = data[f'target_t{horizon}.1']
+        y = data[f'target_t{horizon}']
         return X, y
         
     def objective(self, params, train_x, train_y, valid_x, valid_y):

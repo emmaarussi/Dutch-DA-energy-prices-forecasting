@@ -45,16 +45,31 @@ class SimpleLinearLagsAndDummies:
         self.models = {}  # One model per horizon
         self.scalers = {}  # One scaler per horizon
         self.significant_lags = {
-            14: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_10h','price_lag_154h'],
-            15: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_9h','price_lag_153h'],
-            16: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_8h','price_lag_152h'],
-            17: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_7h','price_lag_151h'],
-            18: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_6h','price_lag_150h'],
-            19: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_5h','price_lag_149h'],
-            20: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_4h','price_lag_148h'],
-            21: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_147h'],
-            22: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_146h'],
-            23: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_145h'],
+            14: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_10h', 'price_eur_per_mwh_lag_154h'],
+            15: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_9h', 'price_eur_per_mwh_lag_153h'],
+            16: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_8h', 'price_eur_per_mwh_lag_152h'],
+            17: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_7h', 'price_eur_per_mwh_lag_151h'],
+            18: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_6h', 'price_eur_per_mwh_lag_150h'],
+            19: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_5h', 'price_eur_per_mwh_lag_149h'],
+            20: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_4h', 'price_eur_per_mwh_lag_148h'],
+            21: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_147h'],
+            22: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_146h'],
+            23: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_145h'],
+            24: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_144h'],
+            25: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_23h', 'price_eur_per_mwh_lag_143h'],
+            26: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_22h', 'price_eur_per_mwh_lag_142h'],
+            27: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_21h', 'price_eur_per_mwh_lag_141h'],
+            28: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_20h', 'price_eur_per_mwh_lag_140h'],
+            29: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_19h', 'price_eur_per_mwh_lag_139h'],
+            30: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_18h', 'price_eur_per_mwh_lag_138h'],
+            31: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_17h', 'price_eur_per_mwh_lag_137h'],
+            32: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_16h', 'price_eur_per_mwh_lag_136h'],
+            33: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_15h', 'price_eur_per_mwh_lag_135h'],
+            34: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_14h', 'price_eur_per_mwh_lag_134h'],
+            35: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_13h', 'price_eur_per_mwh_lag_133h'],
+            36: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_12h', 'price_eur_per_mwh_lag_132h'],
+            37: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_11h', 'price_eur_per_mwh_lag_131h'],
+            38: ['price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_3h', 'price_eur_per_mwh_lag_10h', 'price_eur_per_mwh_lag_130h'],
             24: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_144h'],
             25: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_23h','price_lag_143h'],
             26: ['price_lag_1h', 'price_lag_2h','price_lag_3h','price_lag_22h','price_lag_142h'],
@@ -168,70 +183,73 @@ class SimpleLinearLagsAndDummies:
 
 
 def main():
-    # Load data
-    # Load data
-    print("Loading data...")
-    data = pd.read_csv('data/processed/multivariate_features.csv')
 
-    data.index = pd.to_datetime(data.index, utc=True)
-    data = data.asfreq('h')  
+    print("Loading data...") 
+    # Load multivariate features
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
+    data = pd.read_csv(features_path, index_col=0)
+    data.index = pd.to_datetime(data.index)
     
-    # Split into training (up to Jan 2024) and test data
-    train_data = data[data.index < '2024-01-01']
-    test_data = data[data.index >= '2024-01-01']
-    
-    print("Data shape:", data.shape)
+    # Initialize model
+    model = SimpleLinearLagsAndDummies(horizons=[14, 24, 38]) 
 
+    # Define train-test split
+    train_start = pd.Timestamp('2023-01-08', tz='Europe/Amsterdam')
+    train_end = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
+    test_start = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
+    test_end = pd.Timestamp('2024-03-01', tz='Europe/Amsterdam')
     
-    # Train model
-    model = SimpleLinearLagsAndDummies()
-    model.train(train_data)
+    train_df = data[train_start:train_end]
+    test_df = data[test_start:test_end]
     
-    # Make predictions on test set
-    print("\nMaking predictions on test set...")
-    predictions = model.predict(test_data)
+    # Train and evaluate
+    results = {}
+    for horizon in model.horizons:
+        print(f"\nTraining and evaluating horizon t+{horizon}h...")
+        results[horizon] = model.train_and_evaluate(train_df, test_df, horizon)
     
-    # Create necessary directories
-    os.makedirs('plots/hybrid', exist_ok=True)
-    os.makedirs('predictions', exist_ok=True)
-
-
-
-    # Calculate and print test metrics
-    print("\nTest metrics:")
-    for h in [14, 24, 38]:  # Show metrics for key horizons
-        actuals = test_data[f'target_t{h}']
-        pred = predictions[f'pred_t{h}']
-        
-        # Calculate metrics
-        metrics = calculate_metrics(actual, pred)
-        
-        print(f"\nHorizon t+{h}:")
-        print(f"MAE: {metrics['MAE']:.2f}")
+    # Plot predictions
+    for horizon in model.horizons:
+        result = results[horizon]
+        predictions_df = result['predictions']
+        metrics = result['metrics']
+        print(f"\nt+{horizon}h horizon:")
+        print(f"Number of predictions: {len(predictions_df)}")
         print(f"RMSE: {metrics['RMSE']:.2f}")
-        print(f"R2: {metrics['R2']:.2f}")
         print(f"SMAPE: {metrics['SMAPE']:.2f}%")
-        
-        # Create and save prediction plot
-        plot_predictions(test_data.index, actuals, predictions, h, f'Linear Model with Lags and Dummies: {h}-hour Ahead Predictions', save_path=f'plots/hybrid/forecast_h{h}.png')
-    
-    # Plot predictions vs actuals
-        plt.figure(figsize=(15, 6))
-        plt.plot(timestamps, actuals, label='Actual', alpha=0.7)
-        plt.plot(timestamps, predictions, label='Predicted', alpha=0.7)
-        plt.title(title, fontsize=14, pad=20)
-        plt.xlabel('Date', fontsize=12)
-        plt.ylabel('Price (EUR/MWh)', fontsize=12)
-        plt.legend(fontsize=10, loc='upper right')
-        plt.grid(True, alpha=0.3)
-        plt.xticks(rotation=45)
-        plt.tight_layout()
-        os.makedirs('plots/linear_with_lags', exist_ok=True)
-        plt.savefig(f'plots/linear_with_lags/forecast_h{h}.png')
+        print(f"R2: {metrics['R2']:.4f}")
+
+    # Create output directory
+    out_dir = 'models_14_38/Linear_with_lags/plots'
+    os.makedirs(out_dir, exist_ok=True)
+
+    # Plot feature importance for each horizon
+    for horizon in model.horizons:
+        importance_df = results[horizon]['feature_importance']
+        plot_feature_importance(
+            importance_df,
+            top_n=20,
+            title=f'Feature Importance (t+{horizon}h)',
+            filename=f'{out_dir}/feature_importance_h{horizon}.png'
+        )
         plt.close()
-    return plt
         
-    
+    # Plot predictions over time
+    for horizon in model.horizons:
+        predictions_df = results[horizon]['predictions']
+        plt.figure(figsize=(15, 6))
+        plt.plot(predictions_df.index, predictions_df['actual'], label='Actual', alpha=0.7)
+        plt.plot(predictions_df.index, predictions_df['predicted'], label='Predicted', alpha=0.7)
+        plt.title(f'Actual vs Predicted Prices Over Time (t+{horizon}h)')
+        plt.xlabel('Date')
+        plt.ylabel('Price (EUR/MWh)')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.savefig(f'{out_dir}/predictions_over_time_h{horizon}.png')
+        plt.close()
+
 
 if __name__ == "__main__":
     main()
