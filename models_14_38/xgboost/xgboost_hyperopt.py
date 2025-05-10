@@ -1,6 +1,9 @@
 """
 XGBoost model with hyperopt optimization for medium to long-term energy price forecasting.
 Uses hyperopt to find optimal hyperparameters for each forecast horizon.
+this model is already considerably slower due to the hyperparameter optimization and the rolling window approach,
+which retrains the model for each window and each horizon on a weekly basis.
+Also the window size is quite big, so that adds time too for training
 
 Features:
 1. Historical price data

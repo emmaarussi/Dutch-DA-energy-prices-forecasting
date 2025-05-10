@@ -5,7 +5,6 @@ for electricity price forecasts.
 """
 
 
-
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -17,29 +16,6 @@ from pathlib import Path
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from utils.utils import calculate_metrics
-
-import pandas as pd
-import numpy as np
-import xgboost as xgb
-import os
-import sys
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import RobustScaler
-from pathlib import Path
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from utils.utils import calculate_metrics
-
-
-import pandas as pd
-import numpy as np
-import xgboost as xgb
-import os
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import RobustScaler
-from utils.utils import calculate_metrics
-
-
 
 
 class XGBoostQuantileForecaster:
@@ -54,7 +30,7 @@ class XGBoostQuantileForecaster:
             labels = dtrain.get_label()
             errors = labels - preds
             grad = np.where(errors < 0, -q, 1 - q)
-            hess = np.ones_like(labels)
+            hess = np.ones_like(labels) * 0.001  # Set hessian to zero for quantile regression
             return grad, hess
         return loss
 
@@ -78,71 +54,62 @@ class XGBoostQuantileForecaster:
                 'gamma': 0.3, 'random_state': 42
             }
 
+
     def prepare_data(self, df, horizon):
-        target_cols = [col for col in df.columns if col.startswith('target_t')]
-        feature_cols = [col for col in df.columns if col not in target_cols and col != 'current_price']
+        """Prepare features and target for a specific horizon, excluding wind, coal, solar, and consumption features"""
+        # Define excluded feature patterns
+        excluded_patterns = [
+            'wind', 'Wind', 'WIND',
+            'solar', 'Solar', 'SOLAR',
+            'coal', 'Coal', 'COAL',
+            'consumption', 'Consumption', 'CONSUMPTION',
+            'load', 'Load', 'LOAD'
+        ]
+        
+        # Get all columns except target columns and excluded features
+        feature_cols = [col for col in df.columns 
+                       if not col.startswith('target_t') and 
+                       not any(pattern in col for pattern in excluded_patterns)]
+        
         X = df[feature_cols]
         y = df[f'target_t{horizon}']
         return X, y
 
     def train_and_predict(self, train_window, test_window, window_size_str):
         predictions_all = []
+        scaler = RobustScaler()
 
         for horizon in self.horizons:
-            print(f"\nTraining models for t+{horizon}h horizon...")
             X_train, y_train = self.prepare_data(train_window, horizon)
             X_test, y_test = self.prepare_data(test_window, horizon)
-
-            print(f"\n\U0001F50E Horizon t+{horizon}h")
-            print("  y_train min/max:", y_train.min(), y_train.max())
-            print("  y_test  min/max:", y_test.min(), y_test.max())
 
             if len(X_train) < 100 or len(X_test) == 0:
                 continue
 
-            y_train_clipped = y_train.clip(lower=0)
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_test_scaled = scaler.transform(X_test)
 
-            X_train_scaled = self.scaler.fit_transform(X_train)
-            X_test_scaled = self.scaler.transform(X_test)
-
-            dtrain = xgb.DMatrix(X_train_scaled, label=y_train_clipped)
+            dtrain = xgb.DMatrix(X_train_scaled, label=y_train.clip(lower=0))
             dtest = xgb.DMatrix(X_test_scaled)
-
             quantile_predictions = {}
 
             for q in self.quantiles:
                 params = self.get_hyperparameters(horizon)
-                params['objective'] = 'reg:squarederror'
-                params['verbosity'] = 0
-
                 try:
-                    model = xgb.train(
-                        params,
-                        dtrain,
-                        num_boost_round=params['n_estimators'],
-                        obj=self.quantile_loss(q)
-                    )
+                    model = xgb.train(params, dtrain, num_boost_round=params['n_estimators'], obj=self.quantile_loss(q))
                     self.models[(horizon, q)] = model
                     quantile_predictions[q] = model.predict(dtest)
-
-                    print(f"Sample predictions (q={q}):", quantile_predictions[q][:5])
-                    print(f"Sample actuals:", y_test.iloc[:5].values)
-
                 except Exception as e:
-                    print(f"\u26a0\ufe0f Error training model for t+{horizon}h, q={q}: {e}")
+                    print(f"⚠️ Error training model for t+{horizon}h, q={q}: {e}")
                     continue
 
             if all(q in quantile_predictions for q in self.quantiles):
                 for idx, target_time in enumerate(y_test.index):
-                    predictions_all.append({
-                        'window_size': window_size_str,
-                        'target_time': target_time,
-                        'horizon': horizon,
-                        'actual': y_test.iloc[idx],
-                        'q10': quantile_predictions[0.1][idx],
-                        'q50': quantile_predictions[0.5][idx],
-                        'q90': quantile_predictions[0.9][idx]
-                    })
+                    predictions_all.append({'window_size': window_size_str, 'target_time': target_time,
+                                            'horizon': horizon, 'actual': y_test.iloc[idx],
+                                            'q10': quantile_predictions[0.1][idx],
+                                            'q50': quantile_predictions[0.5][idx],
+                                            'q90': quantile_predictions[0.9][idx]})
 
         return pd.DataFrame(predictions_all)
 

@@ -1,7 +1,7 @@
 """
-XGBoost model for medium to long-term energy price forecasting using new feature set called multivariate_features.csv.
+XGBoost model using full feature set called multivariate_features.csv.
 
-It uses the utils.utils module for utility functions calculate_metrics, plot_feature_importance, plot_predictions, plot_error_distribution, rolling_window_evaluation
+It uses the utils.utils module for utility functions calculate_metrics, plot_feature_importance
 
 Features:
 1. Historical price data
@@ -10,7 +10,7 @@ Features:
 4. Consumption
 5. Calendar features
 
-The model uses 12-month rolling windows for training, shifted by 1 week, evaluating on horizons from t+14 to t+38.
+No cross validation.
 
 
 """
@@ -29,8 +29,16 @@ class XGBoostclean:
         
     def prepare_data(self, data, horizon):
         """Prepare features and target for a specific horizon"""
-        # Get all columns except target columns
-        feature_cols = [col for col in data.columns if not col.startswith('target_t')]
+        # Define excluded feature patterns
+        #excluded_patterns = [
+            #'forecast'
+        #]
+        
+        # Get all columns except target columns and excluded features
+        feature_cols = [col for col in data.columns 
+                       if not col.startswith('target_t')]#and 
+                       #not any(pattern in col for pattern in excluded_patterns)]
+        
         X = data[feature_cols]
         y = data[f'target_t{horizon}']
         return X, y

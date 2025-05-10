@@ -30,7 +30,7 @@ def create_time_features(data):
         'day_of_week_sin', 'day_of_week_cos',  # Day of week
         'month_sin', 'month_cos',    # Month of year
         'is_weekend', 'is_holiday',  # Calendar effects
-        'is_morning', 'is_evening'   # Time of day effects
+         # Time of day effects
     ]
     
     features = data[time_features].copy()

@@ -67,10 +67,15 @@ def create_price_lagged_features(df):
     lags = list(range(1, 169))  # All lags from 1h to 168h (1 week)
     sources = ['price_eur_per_mwh']
     df = df.copy()
+    
+    lagged_features = []
     for source in sources:
         if source in df.columns:
-            for lag in lags:
-                df[f'{source}_lag_{lag}h'] = df[source].shift(lag)
+            source_lags = {f'{source}_lag_{lag}h': df[source].shift(lag) for lag in lags}
+            lagged_features.append(pd.DataFrame(source_lags))
+    
+    if lagged_features:
+        df = pd.concat([df] + lagged_features, axis=1)
     return df
 
 def create_generation_lagged_features(df):
@@ -78,10 +83,15 @@ def create_generation_lagged_features(df):
     lags = [1, 2, 3, 6, 12, 24, 48, 168]  # 1h to weekly
     sources = ['wind', 'solar', 'coal', 'consumption', 'consumption_forecast', 'wind_forecast', 'solar_forecast']
     df = df.copy()
+    
+    lagged_features = []
     for source in sources:
         if source in df.columns:
-            for lag in lags:
-                df[f'{source}_lag_{lag}h'] = df[source].shift(lag)
+            source_lags = {f'{source}_lag_{lag}h': df[source].shift(lag) for lag in lags}
+            lagged_features.append(pd.DataFrame(source_lags))
+    
+    if lagged_features:
+        df = pd.concat([df] + lagged_features, axis=1)
     return df
 
 def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_horizon=38):
@@ -92,7 +102,9 @@ def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_ho
     targets = create_target_features(df, price_col, forecast_horizon)
     generation_lags = create_generation_lagged_features(df)
     price_lags = create_price_lagged_features(df)
-    features = pd.concat([time_features, holiday_features, generation_lags, price_lags, targets], axis=1)
+    rolling_stats = create_rolling_statistics(df)
+    price_diffs = create_price_differences(df)
+    features = pd.concat([time_features, holiday_features, generation_lags, price_lags, rolling_stats, price_diffs, targets], axis=1)
     features['current_price'] = df[price_col]
 
     # Clean up
