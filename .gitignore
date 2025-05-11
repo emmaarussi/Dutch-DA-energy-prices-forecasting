@@ -48,3 +48,6 @@ env/
 *.joblib
 *.pkl
 data/raw/generation_by_source_2023_2024.csv
+.DS_Store
+venv_py310/
+.python-version
