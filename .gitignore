@@ -47,3 +47,4 @@ env/
 # Model files
 *.joblib
 *.pkl
+data/raw/generation_by_source_2023_2024.csv
