@@ -28,6 +28,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 from statsmodels.tsa.ar_model import AutoReg
+from statsmodels.stats.diagnostic import acorr_ljungbox
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -193,6 +194,15 @@ def main():
         #check acf testdata
         plot_acf(test_data['price_eur_per_mwh'].dropna(), lags=100)
         plt.show()
+
+        # Check Ljung-Box test for residuals
+        lb_test = acorr_ljungbox(test_data['price_eur_per_mwh'].dropna(), lags=71)
+        print(f"\nLjung-Box test results for horizon {horizon}:")
+        print("H0: The residuals are independently distributed")
+        print("H1: The residuals are not independently distributed")
+        print("\nTest statistics:")
+        print(lb_test)
+        
 
 if __name__ == "__main__":
     main()
