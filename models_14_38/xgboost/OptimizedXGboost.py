@@ -1,7 +1,7 @@
 """
-XGBoost model optimized for features and hyperparameters. now used
+XGBoost model optimized for features and hyperparameters. now used on full period of train and test data
 
-
+This model will be used to construct CI later with different methods.
 """
 import pandas as pd
 import numpy as np

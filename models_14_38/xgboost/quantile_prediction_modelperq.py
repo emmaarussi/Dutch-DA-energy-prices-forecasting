@@ -1,3 +1,30 @@
+"""
+This is the quantile regression model i am using to predict quantiles for CI creation
+What this model does, essentially, is the same as the XGBoost model, which predicts the 
+mean of the target variable. Here the loss function is a pinball loss, which is a 
+loss function that is used to predict quantiles of the target variable.
+
+
+The hyperparameters and the features where already optimized for the XGBoost model, 
+so i will use the same hyperparameters and features for the quantile regression model.
+so basically, this going to be used later for the Sequential Predictive Conformal Inference.
+
+
+
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
 from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
 from sklearn.metrics import mean_pinball_loss
