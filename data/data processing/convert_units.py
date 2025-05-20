@@ -18,11 +18,15 @@ def convert_units():
     # Convert historical wind and solar from KW to MW
     df['wind'] = df['wind'] / 1000
     df['solar'] = df['solar'] / 1000
+    df['coal'] = df['coal'] / 1000
+    
     
     print("\nAfter conversion:")
     print("Wind mean:", df['wind'].mean())
     print("Solar mean:", df['solar'].mean())
+    print("Coal mean:", df['coal'].mean())
     
+
     # Remove gas column since we don't have this data
     df = df.drop('gas', axis=1)
     print("\nRemoved gas column")
