@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from utils.utils import calculate_metrics, plot_feature_importance
 
-class XGBoostclean:
+class XGBoostOptimized:
     def __init__(self, horizons=range(14, 39)):
         self.horizons = horizons
         
@@ -88,76 +88,87 @@ class XGBoostclean:
                 'gamma': 0.2176, 'random_state': 42
             }
 
-def main():
-    # Create output directories
-    plots_dir = 'models_14_38/xgboost/plots'
-    os.makedirs(plots_dir, exist_ok=True)
+
     
-    # Load multivariate features
+def plot_model_fit(y_true, y_pred, index, horizon, output_dir):
+    residuals = y_true - y_pred
+
+    # Actual vs Predicted over time
+    plt.figure(figsize=(15, 6))
+    plt.plot(index, y_true, label='Actual', color='black', alpha=0.7)
+    plt.plot(index, y_pred, label='Predicted', color='blue', linestyle='--', alpha=0.7)
+    plt.title(f"XGBoost Fit on Full Data (t+{horizon}h)")
+    plt.xlabel("Time")
+    plt.ylabel("Price (EUR/MWh)")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/fit_full_data_h{horizon}.png")
+    plt.close()
+
+    # Scatter plot
+    plt.figure(figsize=(6, 6))
+    plt.scatter(y_true, y_pred, alpha=0.3)
+    plt.plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], 'r--')
+    plt.xlabel("Actual")
+    plt.ylabel("Predicted")
+    plt.title(f"Prediction Scatter (t+{horizon}h)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/scatter_full_data_h{horizon}.png")
+    plt.close()
+
+    # Residual plot
+    plt.figure(figsize=(15, 4))
+    plt.plot(index, residuals, label="Residuals", alpha=0.7)
+    plt.axhline(0, color='red', linestyle='--')
+    plt.title(f"Residuals Over Time (t+{horizon}h)")
+    plt.xlabel("Time")
+    plt.ylabel("Residual (Actual - Predicted)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(f"{output_dir}/residuals_full_data_h{horizon}.png")
+    plt.close()
+
+
+def main():
+    # Load data
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features_selectedXGboost.csv')
     data = pd.read_csv(features_path, index_col=0)
     data.index = pd.to_datetime(data.index)
     
+    # Use full dataset (train + test)
+    full_data = data.copy()
+    
     # Initialize model
-    model = XGBoostclean(horizons=[14, 24, 38]) 
-
-    # Define train-test split
-    train_start = pd.Timestamp('2023-01-08', tz='Europe/Amsterdam')
-    train_end = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
-    test_start = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
-    test_end = pd.Timestamp('2024-03-01', tz='Europe/Amsterdam')
+    model = XGBoostOptimized(horizons=[14, 24, 38]) 
     
-    train_df = data[train_start:train_end]
-    test_df = data[test_start:test_end]
-    
-    # Train and evaluate
+    # Train on full dataset
     results = {}
     for horizon in model.horizons:
-        print(f"\nTraining and evaluating horizon t+{horizon}h...")
-        results[horizon] = model.train_and_evaluate(train_df, test_df, horizon)
-    
-    # Plot predictions
-    for horizon in model.horizons:
-        result = results[horizon]
-        predictions_df = result['predictions']
-        metrics = result['metrics']
-        print(f"\nt+{horizon}h horizon:")
-        print(f"Number of predictions: {len(predictions_df)}")
-        print(f"RMSE: {metrics['RMSE']:.2f}")
-        print(f"SMAPE: {metrics['SMAPE']:.2f}%")
-        print(f"R2: {metrics['R2']:.4f}")
+        print(f"\nTraining on full dataset for horizon t+{horizon}h...")
+        results[horizon] = model.train_and_evaluate(full_data, full_data, horizon)
 
-    # Create output directory
-    out_dir = 'models_14_38/xgboost/plots/cleanfull'
-    os.makedirs(out_dir, exist_ok=True)
+    # Plot model fit for each horizon
+    fit_plot_dir = 'models_14_38/xgboost/plots/fit_full'
+    os.makedirs(fit_plot_dir, exist_ok=True)
 
-    # Plot feature importance for each horizon
     for horizon in model.horizons:
-        importance_df = results[horizon]['feature_importance']
-        plot_feature_importance(
-            importance_df,
-            top_n=20,
-            title=f'Feature Importance (t+{horizon}h)',
-            filename=f'{out_dir}/feature_importance_h{horizon}.png'
+        preds_df = results[horizon]['predictions']
+        plot_model_fit(
+            y_true=preds_df['actual'].values,
+            y_pred=preds_df['predicted'].values,
+            index=preds_df.index,
+            horizon=horizon,
+            output_dir=fit_plot_dir
         )
-        plt.close()
-        
-    # Plot predictions over time
+
+    # Save final models
+    import joblib
+    model_dir = 'models_14_38/xgboost/final_models'
+    os.makedirs(model_dir, exist_ok=True)
     for horizon in model.horizons:
-        predictions_df = results[horizon]['predictions']
-        plt.figure(figsize=(15, 6))
-        plt.plot(predictions_df.index, predictions_df['actual'], label='Actual', alpha=0.7)
-        plt.plot(predictions_df.index, predictions_df['predicted'], label='Predicted', alpha=0.7)
-        plt.title(f'Actual vs Predicted Prices Over Time (t+{horizon}h)')
-        plt.xlabel('Date')
-        plt.ylabel('Price (EUR/MWh)')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(f'{out_dir}/predictions_over_time_h{horizon}.png')
-        plt.close()
+        joblib.dump(results[horizon]['model'], f"{model_dir}/xgboost_model_h{horizon}.pkl")
 
-
-if __name__ == "__main__":
-    main()
+    print('\nAll models trained and saved. Ready for use in SBPI and EnbPI.')
