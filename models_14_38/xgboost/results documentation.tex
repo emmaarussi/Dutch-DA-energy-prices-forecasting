@@ -1,0 +1,510 @@
+Analysis for wind:
+Mean: 2149.18
+Median: 1661.24
+Std Dev: 1836.82
+Min: 0.00
+Max: 6241.98
+Number of outliers: 0
+Percentage of outliers: 0.00%
+
+Analysis for wind_forecast:
+Mean: 1219.55
+Median: 48.50
+Std Dev: 1884.37
+Min: 0.00
+Max: 7821.50
+Number of outliers: 871
+Percentage of outliers: 8.72%
+Sample outliers: [5068.   5246.25 5265.   5483.25 5235.5 ]
+
+Analysis for solar:
+Mean: 2313.13
+Median: 30.73
+Std Dev: 3722.11
+Min: 0.00
+Max: 16832.31
+Number of outliers: 925
+Percentage of outliers: 9.26%
+Sample outliers: [ 8709.422       8820.96116667  9212.527      10047.28966667
+ 10217.52666667]
+
+Analysis for solar_forecast:
+Mean: 1901.78
+Median: 1523.00
+Std Dev: 1471.14
+Min: 23.50
+Max: 6435.00
+Number of outliers: 1
+Percentage of outliers: 0.01%
+Sample outliers: [6435.]
+
+Analysis for consumption:
+Mean: 12758.42
+Median: 12658.62
+Std Dev: 1981.30
+Min: 6768.00
+Max: 19477.25
+Number of outliers: 53
+Percentage of outliers: 0.53%
+Sample outliers: [ 6891.    6768.    6970.25 18325.5  18292.25]
+
+Analysis for consumption_forecast:
+Mean: 10901.49
+Median: 11069.25
+Std Dev: 2488.52
+Min: 478.75
+Max: 17583.25
+Number of outliers: 554
+Percentage of outliers: 5.54%
+Sample outliers: [5855.75 5906.25 5524.   4694.25 4178.75]
+
+Analysis for coal:
+Mean: 698.50
+Median: 699.52
+Std Dev: 3.13
+Min: 684.06
+Max: 700.00
+Number of outliers: 1328
+Percentage of outliers: 13.29%
+Sample outliers: [699.995      699.98333333 699.972      699.96066667 699.94916667]
+emmaarussi@MacBook-Air-M1-C02DQQP6Q6L4-R13-EA thesis-dutch-energy-analysis % /Users/emmaarussi/Cascade
+Projects/thesis-dutch-energy-analysis/venv_py310/bin/python "/Users/emmaarussi/CascadeProjects/thesis-
+dutch-energy-analysis/data/data processing/outlier_removal.py"
+
+removing outliers...
+
+Creating features...
+Created 328 features.
+
+Saving features...
+
+Feature preparation complete. Shape: (9994, 328) (after outlier removal)
+Features available: 
+
+so after outlier removal, using the simple model of ar, we get the following
+
+t+14h horizon:
+Number of predictions: 730
+RMSE: 14.72
+SMAPE: 21.27%
+R2: 0.4823
+
+t+24h horizon:
+Number of predictions: 730
+RMSE: 15.12
+SMAPE: 22.14%
+R2: 0.4347
+
+t+38h horizon:
+Number of predictions: 730
+RMSE: 15.88
+SMAPE: 21.38%
+R2: 0.3728
+
+after outlier removal and also after feature selection, we get the following
+Training and evaluating horizon t+14h...
+✅ Saved multivariate_features_selectedXGboost.csv with top 100 features.
+
+Training and evaluating horizon t+24h...
+
+Training and evaluating horizon t+38h...
+
+t+14h horizon:
+Number of predictions: 730
+RMSE: 14.79
+SMAPE: 21.24%
+R2: 0.4772
+
+t+24h horizon:
+Number of predictions: 730
+RMSE: 15.51
+SMAPE: 22.71%
+R2: 0.4049
+
+t+38h horizon:
+Number of predictions: 730
+RMSE: 15.87
+SMAPE: 21.79%
+R2: 0.3738
+
+not a lot better than with outlier, but perhaps the changes are in the other models
+
+now playing with window sizes (without outlier removal)
+Evaluating with 30D window:
+[2024-01-01 12:00:00+00:00] Horizon t+14h — Predictions: 720
+[2024-01-01 12:00:00+00:00] Horizon t+24h — Predictions: 720
+[2024-01-01 12:00:00+00:00] Horizon t+38h — Predictions: 720
+[2024-01-08 12:00:00+00:00] Horizon t+14h — Predictions: 720
+[2024-01-08 12:00:00+00:00] Horizon t+24h — Predictions: 720
+[2024-01-08 12:00:00+00:00] Horizon t+38h — Predictions: 720
+[2024-01-15 12:00:00+00:00] Horizon t+14h — Predictions: 720
+[2024-01-15 12:00:00+00:00] Horizon t+24h — Predictions: 720
+[2024-01-15 12:00:00+00:00] Horizon t+38h — Predictions: 720
+[2024-01-22 12:00:00+00:00] Horizon t+14h — Predictions: 720
+[2024-01-22 12:00:00+00:00] Horizon t+24h — Predictions: 720
+[2024-01-22 12:00:00+00:00] Horizon t+38h — Predictions: 720
+[2024-01-29 12:00:00+00:00] Horizon t+14h — Predictions: 717
+[2024-01-29 12:00:00+00:00] Horizon t+24h — Predictions: 717
+[2024-01-29 12:00:00+00:00] Horizon t+38h — Predictions: 717
+
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 21.76
+SMAPE: 28.52%
+R2: 0.2027
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 22.12
+SMAPE: 28.82%
+R2: 0.1645
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 23.51
+SMAPE: 30.46%
+R2: 0.0373
+
+Evaluating with 90D window:
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 19.55
+SMAPE: 26.28%
+R2: 0.3569
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 20.51
+SMAPE: 26.47%
+R2: 0.2812
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 22.34
+SMAPE: 29.09%
+R2: 0.1310
+
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 21.59
+SMAPE: 31.16%
+R2: 0.2153
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 21.01
+SMAPE: 29.99%
+R2: 0.2457
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 38.14
+SMAPE: 63.46%
+R2: -1.5331
+
+
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 18.15
+SMAPE: 24.69%
+R2: 0.4457
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 19.42
+SMAPE: 26.23%
+R2: 0.3555
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 23.29
+SMAPE: 32.37%
+R2: 0.0553
+
+now without outliers!!
+window 30
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 21.76
+SMAPE: 27.79%
+R2: 0.1899
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 23.98
+SMAPE: 31.76%
+R2: 0.0010
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 23.61
+SMAPE: 30.88%
+R2: 0.0193
+
+window 90
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 19.42
+SMAPE: 26.12%
+R2: 0.3542
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 20.45
+SMAPE: 26.47%
+R2: 0.2736
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 21.91
+SMAPE: 27.53%
+R2: 0.1556
+
+window 180
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 21.38
+SMAPE: 30.04%
+R2: 0.2178
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 20.50
+SMAPE: 28.93%
+R2: 0.2697
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 23.78
+SMAPE: 33.73%
+R2: 0.0051
+
+
+window 365
+
+t+14h horizon:
+Number of predictions: 3597
+RMSE: 18.56
+SMAPE: 25.13%
+R2: 0.4107
+
+t+24h horizon:
+Number of predictions: 3597
+RMSE: 19.18
+SMAPE: 24.71%
+R2: 0.3609
+
+t+38h horizon:
+Number of predictions: 3597
+RMSE: 20.65
+SMAPE: 26.82%
+R2: 0.2496
+
+
+now we have the quantile regression
+
+📊 Evaluation for t+14h horizon:
+Number of predictions: 730
+RMSE: 14.89
+SMAPE: 20.48%
+R2: 0.4698
+90% Prediction Interval Coverage: 89.6%
+
+
+with only 100 features
+
+📊 Evaluation for t+14h horizon:
+Number of predictions: 730
+RMSE: 15.46
+SMAPE: 21.04%
+R2: 0.4288
+90% Prediction Interval Coverage: 85.2%
+
+
+now we have the XGboostLSS, which has the following results;
+
+
+📊 Evaluation for t+14h horizon:
+Number of predictions: 730
+RMSE: 17.38
+SMAPE: 21.91%
+R2: 0.2778
+
+Prediction interval coverage: 87.95%
+
+Residuals Statistics:
+count    730.000000
+mean      -4.954410
+std       16.670146
+min      -65.458029
+25%      -10.999320
+50%       -3.796076
+75%        4.122927
+max       49.328296
+Name: target_t14, dtype: float64
+Data shapes:
+X_train: (9265, 283)
+y_train: (9265,)
+X_test: (730, 283)
+y_test: (730,)
+
+Training model for t+24h horizon with basic parameters...
+
+Making predictions for t+24h horizon...
+
+Prediction output:
+predictions type: <class 'pandas.core.frame.DataFrame'>
+predictions columns: Index(['loc', 'scale'], dtype='object')
+
+📊 Evaluation for t+24h horizon:
+Number of predictions: 730
+RMSE: 17.28
+SMAPE: 21.39%
+R2: 0.2611
+
+Prediction interval coverage: 86.99%
+
+Residuals Statistics:
+count    730.000000
+mean      -6.554805
+std       16.004045
+min      -65.375261
+25%      -12.796985
+50%       -4.199339
+75%        2.364208
+max       36.296551
+Name: target_t24, dtype: float64
+Data shapes:
+X_train: (9265, 283)
+y_train: (9265,)
+X_test: (730, 283)
+y_test: (730,)
+
+Training model for t+38h horizon with basic parameters...
+
+Making predictions for t+38h horizon...
+
+Prediction output:
+predictions type: <class 'pandas.core.frame.DataFrame'>
+predictions columns: Index(['loc', 'scale'], dtype='object')
+
+📊 Evaluation for t+38h horizon:
+Number of predictions: 730
+RMSE: 18.94
+SMAPE: 23.71%
+R2: 0.1084
+
+Prediction interval coverage: 81.10%
+
+Residuals Statistics:
+count    730.000000
+mean      -9.443462
+std       16.428848
+min      -68.738129
+25%      -14.988934
+50%       -8.123014
+75%       -0.316232
+max       41.599789
+Name: target_t38, dtype: float64
+
+
+Feature
+
+Classic XGBoost
+
+Quantile XGBoost
+
+XGBoostLSS
+
+Output
+
+Mean only
+
+q10, q50, q90
+
+Mean + Std (loc/scale)
+
+Interval Prediction
+
+No
+
+Yes (80%)
+
+Yes (95%)
+
+Distribution Assumption
+
+None
+
+None
+
+Gaussian (or other)
+
+Uncertainty Type
+
+None
+
+Asymmetric
+
+Parametric
+
+Use Case
+
+Point forecast
+
+Forecast + band
+
+Full probabilistic
+
+
+
+hyperopt parameters!
+
+✅ Best hyperparameters for t+14h:
+max_depth: 8
+learning_rate: 0.0110
+n_estimators: 1300
+min_child_weight: 3.1910
+subsample: 0.8837
+colsample_bytree: 0.8369
+gamma: 0.1393
+random_state: 42
+
+✅ Best hyperparameters for t+24h:
+max_depth: 9
+learning_rate: 0.0693
+n_estimators: 1400
+min_child_weight: 1.4524
+subsample: 0.7879
+colsample_bytree: 0.8769
+gamma: 0.1656
+random_state: 42
+
+✅ Best hyperparameters for t+38h:
+max_depth: 9
+learning_rate: 0.0179
+n_estimators: 1100
+min_child_weight: 5.4722
+subsample: 0.8081
+colsample_bytree: 0.8531
+gamma: 0.2176
+random_state: 42
+
+Shorter horizons (14h): use lower learning rate and more regularization to avoid overfitting to near-term volatility.
+
+Medium (24h): needs deeper trees and less regularization — probably because patterns are stronger but less noisy than 14h.
+
+Long (38h): most regularized (high min_child_weight, gamma), reflecting weaker signal and need for cautious fitting
+
+
+hyperparameters for XGboost LSS!!
+
+Best parameters:
+eta: 0.07008064542857126
+max_depth: 2
+gamma: 4.912250073902055e-08
+subsample: 0.6245350501310354
+colsample_bytree: 0.7432934545621622
+min_child_weight: 1.4392030610523023
+booster: gbtree
+opt_rounds: 100
