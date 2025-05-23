@@ -277,7 +277,7 @@ Fold 2:
 - Validation: 2025-01-30 → 2025-02-06 (next 7 days)
 
 Hyperparameter optimization is done on by training on 80% of the testdata and validating on the remaining 20% using hyperopt here models_14_38/xgboost/XGboost_training_features_hyperparameters_cv/xgboost_hyperopt.py
-
+```
 
 ## Model Performance
 
@@ -286,7 +286,7 @@ Model performance is evaluated using adapted SMAPE (for correction of infinite v
 
 
 
-### Uncertainty Estimation Methods
+## Uncertainty Estimation Methods
 
 1. **XGBoost LSS (Location-Scale-Shape)**
    - Parametric approach assuming Gaussian distribution
