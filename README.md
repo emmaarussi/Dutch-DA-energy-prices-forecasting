@@ -226,12 +226,12 @@ graph TD
 6. **Target Features** (25 total):
    - Horizons from t+14 to t+38
 
-4. **Analyze data and features**
+### Analyze data and features
    ```bash
    python data/analysis_scripts/analyze_data.py
    ```
 
-5. **Model Training**
+### Model Training
    The processed features will be ready for use with any of the models in the `models_14_38` directory:
    
    **XGBoost Models** (`models_14_38/xgboost/`):
@@ -261,7 +261,6 @@ graph TD
 
 
 
-
 ## Training Strategy
 
 The models use rolling window time series cross-validation strategy to ensure robust performance and mimic real world day-ahead trading strategy
@@ -287,7 +286,7 @@ Model performance is evaluated using adapted SMAPE (for correction of infinite v
 
 
 
-##  Uncertainty Estimation Methods
+### Uncertainty Estimation Methods
 
 1. **XGBoost LSS (Location-Scale-Shape)**
    - Parametric approach assuming Gaussian distribution
