@@ -13,72 +13,69 @@ This project implements a machine learning pipeline for analyzing and forecastin
 - **Test Period**: March 2024 - June 2024
 - **Focus**: Constructing and evaluating prediction intervals
 - **Methods**:
-  - Location-Scale-Shape (LSS) XGBoost
-  - Quantile Regression
-  - Ensemble-based Nonparametric Bootstrap Intervals (ENBI)
-  - Split Conformal Prediction Intervals (SPCI)
-  - Sieves Bootstrap
+  - Location-Scale-Shape (LSS) XGBoost (probabilistic forecasting, parametric)
+  - Quantile Regression (pinball loss function applied to XGBoost)
+  - Ensemble-based Nonparametric Bootstrap Intervals (ENBI) (nonparametric, bootstrap-based, distribution-free, but requires a large number of bootstrap samples, and assumes interchangeability of errors (through Leave one out cross-validation))
+  - Split Conformal Prediction Intervals (SPCI) (distribution-free, requires 2 models, one for estimating the mean or median (XGBoost) and one for quantile regression, where the quantile regression model is trained on the residuals of the mean or median model of the last 100 samples up until the current time)
+  - Sieves Bootstrap (nonparametric in the sense that it does not assume a distribution of the errors, but it assumes autocorrelation of the errors, therefor the residuals of the XGBoost model are bootstrapped with autocorrelation taken into account, by applying a AR model to the residuals)
 
-## Key Features
 
-- Multi-horizon forecasting (t+14 to t+38 hours)
-- Integration of renewable generation data (wind, solar) and consumption patterns
-- Comprehensive feature engineering pipeline with 199 features
-- Multiple model implementations (XGBoost, AR, Linear)
-- Probabilistic forecasting capabilities
-- Advanced cross-validation strategies
-- Extensive performance analysis and visualization tools
+
+Overall quite the party!
 
 ## Project Structure
 
 ```
 thesis-dutch-energy-analysis/
-├── analysis/              # Analysis scripts and outputs
-│   └── correlation_plots/ # Feature correlation visualizations
 ├── data/
 │   ├── analysis_output/   # Analysis results and metrics
+│   ├── analysis_scripts/   # Analysis scripts
 │   ├── data_processing/   # Data processing scripts
-│   │   ├── process_raw_data.py
 │   │   ├── convert_units.py
-│   │   ├── prepare_features.py
-│   │   └── prepare_multivariate_features.py
+│   │   ├── outlier_removal.py
+│   │   ├──prepare_features.py
+│   │   ├──prepare_multivariate_features.py
+│   │   ├──prepare_multivariate_nooutliers.py
+│   │   ├──Prepare_testdata.py
+│   │   ├──Prepare_testset_features.py
+│   │   ├── process_raw_data.py
+│   │   └── testset_topfeatures.py
 │   ├── processed/         # Processed datasets
 │   └── raw/              # Raw data files
-├── documentation/        # Additional documentation
 ├── models_14_38/        # Models for 14-38h forecasting
 │   ├── ar/              # Autoregressive models
 │   │   ├── linear_setlags_rollingwindowstepsizeone.py
 │   │   ├── rolling_ar_windowplaying.py
 │   │   └── simple_arp_recursive.py
 │   ├── Linear_with_lags/ # Linear models with lagged features
+│   │   ├── linear_full_features.py
+│   │   ├── RFECV_linear_with_lags.py
+│   │   └── simple_linear_lags_and_dummies.py
 │   ├── linear_no_lags/   # Baseline linear models
 │   └── xgboost/          # XGBoost implementations
-│       ├── ENBPIXGboost.py                    # Ensemble-based Nonparametric Bootstrap Intervals
-│       ├── CV_XGboostLSS.py                   # Location-Scale-Shape Cross-Validation
-│       ├── Hyperopt_XGboostLSS.py             # LSS Hyperparameter Optimization
-│       ├── OptimizedXGboost.py                # Base Optimized Implementation
-│       ├── SPCI_XGBoost.py                    # Split Conformal Prediction Intervals
-│       ├── SievesXGBoost.py                   # Sieves Bootstrap Implementation
-│       ├── XGBoost_pinball_fulltrain.py       # Pinball Loss Training
-│       ├── quantile_prediction_modelperq.py    # Per-Quantile Prediction
-│       ├── secondtryspci.py                   # SPCI Alternative Implementation
-│       ├── XGBoosttesting/                    # Testing implementations
-│       │   ├── XGboostLSS_clean_all_features.py
-│       │   ├── test_xgboostlss.py
-│       │   ├── xgboost_CV_multiple_window_sizes.py
-│       │   ├── xgboost_clean_full_features.py
-│       │   ├── xgboost_clean_price_features_only.py
-│       │   ├── xgboost_hyperopt.py
-│       │   ├── xgboost_quantile_forecasting.py
-│       │   └── xgboost_simple.py
-│       └── XGboost_training_features_hyperparameters_cv/  # Feature selection and CV
-│           ├── XGboost_topfeaturesselection.py
+│       ├── XGBoost_test_features_hyperparameters_cv/    
+│           └── XGBoost_topfeaturesselection.py
+│           └── XGBoost_topfeaturesselection.py
 │           ├── xgboost_CV_multiple_window_sizes.py
 │           ├── xgboost_clean_full_features.py
 │           ├── xgboost_clean_price_features_only.py
 │           └── xgboost_hyperopt.py
-├── plots/               # General visualization outputs
-├── predictions/         # Model prediction outputs
+│           ├── XGboostLSS_clean_all_features.py
+│           ├── test_xgboostlss.py
+│           ├──                    # Location-Scale-Shape 
+│       ├── CV_XGboostLSS.py  
+│       ├── ENBPIXGboost.py             # ENBI Implementation
+│       ├── Hyperopt_XGboostLSS.py                # Base Optimized Implementation
+│       ├── OptimizedXGboost.py
+│       ├── quantile_prediction_modelperq.py  
+results documentation
+                  # Split Conformal Prediction Intervals
+│       ├── SievesXGBoost.py                   # Sieves Bootstrap Implementation
+│       ├── XGBoost_pinball_fulltrain.py       # Pinball Loss Training
+│       ├── secondtryspci.py                   # SPCI Alternative Implementation
+│       ├── XGBoosttesting/                    # Testing implementations
+
+
 └── utils/              # Utility functions
 ```
 
@@ -87,7 +84,7 @@ thesis-dutch-energy-analysis/
 1. Create and activate a virtual environment:
 ```bash
 python3 -m venv venv
-source venv/bin/activate
+source venv_py3/bin/activate
 ```
 
 2. Install dependencies:
@@ -95,7 +92,24 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+# Phase one: Model Optimization and Point Forecasting
+
 ## Data Processing Pipeline
+
+## Required Data
+
+The repository includes the raw prices data file:
+- `data/raw/raw_prices_2023_2024.csv`
+
+
+Due to file size limitations, the generation data file is not included in the repository. You will need to obtain the following file separately and place it in the `data/raw/` directory:
+- `generation_by_source_2023_2024.csv`
+[text](data/raw/generation_by_source.csv)
+
+The other data (consumption, forecasts and prices can be obtained from the entsoe website with an API key.) But you can also get it from the Nederlandse Energie Dashboard, but please email e.s.arussi@student.vu.nl for the file if you need it. 
+
+Other necessary data files will be generated through the processing pipeline.
+
 
 To reproduce the analysis, follow these steps to process the data:
 
@@ -115,192 +129,12 @@ To reproduce the analysis, follow these steps to process the data:
    ```bash
    python data/data_processing/prepare_features.py
    python data/data_processing/prepare_multivariate_features.py
+
    ```
-   These scripts create the base feature set and additional features for model training.
-
-4. **Model Training**
-   The processed features will be ready for use with any of the models in the `models_14_38` directory:
-   
-   **XGBoost Models** (`models_14_38/xgboost/`):
-   1. Core Models:
-      - ENBPI Implementation: `ENBPIXGboost.py`
-      - Optimized Implementation: `OptimizedXGboost.py`
-      - SPCI Implementation: `SPCI_XGBoost.py`
-      - Sieves Implementation: `SievesXGBoost.py`
-   
-   2. Probabilistic Forecasting:
-      - LSS Cross-Validation: `CV_XGboostLSS.py`
-      - LSS Hyperparameter Optimization: `Hyperopt_XGboostLSS.py`
-      - Pinball Loss Training: `XGBoost_pinball_fulltrain.py`
-      - Quantile Prediction: `quantile_prediction_modelperq.py`
-   
-   3. Testing and Development (`XGBoosttesting/`):
-      - LSS with Full Features: `XGboostLSS_clean_all_features.py`
-      - Cross-validation: `xgboost_CV_multiple_window_sizes.py`
-      - Feature Sets: `xgboost_clean_full_features.py`, `xgboost_clean_price_features_only.py`
-      - Hyperparameter Tuning: `xgboost_hyperopt.py`
-      - Quantile Forecasting: `xgboost_quantile_forecasting.py`
-   
-   4. Feature Selection and CV (`XGboost_training_features_hyperparameters_cv/`):
-      - Top Feature Selection: `XGboost_topfeaturesselection.py`
-      - Cross-validation Studies: `xgboost_CV_multiple_window_sizes.py`
-      - Feature Set Experiments: `xgboost_clean_full_features.py`, `xgboost_clean_price_features_only.py`
-
-   **Autoregressive Models** (`models_14_38/ar/`):
-   - Rolling Window Implementation: `rolling_ar_windowplaying.py`
-   - Simple Recursive Prediction: `simple_arp_recursive.py`
-   - Linear Set Lags: `linear_setlags_rollingwindowstepsizeone.py`
-
-   **Linear Models**:
-   1. With Lagged Features (`models_14_38/Linear_with_lags/`):
-      - Feature Selection: `RFECV_linear_with_lags.py`
-      - Simple Implementation: `simple_linear_lags_and_dummies.py`
-   
-   2. Without Lags (`models_14_38/linear_no_lags/`):
-      - Basic Implementation: `simple_no_lags.py`
-
-## Required Data
-
-The repository includes the raw prices data file:
-- `data/raw/raw_prices_2023_2024.csv`
-
-Due to file size limitations, the generation data file is not included in the repository. You will need to obtain the following file separately and place it in the `data/raw/` directory:
-- `generation_by_source_2023_2024.csv` (can be obtained from the Nederlandse Energie Dashboard, but please email e.s.arussi@student.vu.nl for the file)
-
-Other necessary data files will be generated through the processing pipeline.
-
-## Training Strategy
-
-The models use rolling window time series cross-validation strategy to ensure robust performance and mimic real world day-ahead trading strategy
-
-The rolling strategies differ, since for computational power purposes, having a new training fold every day for the XGBOOST is a bit slow. Therefore now for model tweaking purposes, the cross validation is done with folds of 7 days, summing to a total of 12 folds over a test period of 3 months
-
-```
-Fold 1:
-- Training:   2021-03-09 → 2025-01-29 (initial window)
-- Validation: 2025-01-29 → 2025-02-05 (next 7 days)
-
-Fold 2:
-- Training:   2021-03-09 → 2025-01-30 (window grows)
-- Validation: 2025-01-30 → 2025-02-06 (next 7 days)
-```
+   These scripts create the base feature set and additional features for model training. these do not prepare yet for phase 2 (uncertainty estimation, since a new testset is prepared for this seperately)
 
 
-
-## Model Performance
-
-Model performance is evaluated using adapted SMAPE (for correction of infinite values near zero), RMSE, and R². Results are presented for both project phases:
-
-### Phase 1: Point Forecasting Performance
-
-#### Optimized XGBoost Model
-1. Near-term (t+14h):
-   - RMSE: 14.26
-   - SMAPE: 20.93%
-   - R²: 0.5136
-
-2. Medium-term (t+24h):
-   - RMSE: 15.77
-   - SMAPE: 21.71%
-   - R²: 0.3851
-
-3. Long-term (t+38h):
-   - RMSE: 15.56
-   - SMAPE: 22.06%
-   - R²: 0.3983
-
-#### Autoregressive Model (t+14h)
-- Training:
-  - RMSE: 16.02
-  - SMAPE: 20.63%
-  - R²: 0.89
-
-- Test:
-  - RMSE: 35.69
-  - SMAPE: 42.52%
-  - R²: -2.16
-
-#### Linear Models
-t+14h horizon:
-- RMSE: 16.12
-- SMAPE: 23.66%
-- R²: 0.3788
-
-t+24h horizon:
-- RMSE: 16.84
-- SMAPE: 24.34%
-- R²: 0.2982
-
-t+38h horizon:
-- RMSE: 18.88
-- SMAPE: 26.16%
-- R²: 0.1140
-
-### Phase 2: Uncertainty Estimation Performance
-
-#### XGBoost LSS (t+38h)
-- RMSE: 18.00
-- SMAPE: 22.28%
-- R²: 0.1945
-- 90% Prediction interval coverage: 83.84%
-
-#### Cross-Validation Strategy
-For computational efficiency, the cross-validation uses 7-day folds over a 3-month test period:
-
-```
-Fold 1:
-- Training:   2021-03-09 → 2025-01-29 (initial window)
-- Validation: 2025-01-29 → 2025-02-05 (next 7 days)
-
-Fold 2:
-- Training:   2021-03-09 → 2025-01-30 (window grows)
-- Validation: 2025-01-30 → 2025-02-06 (next 7 days)
-```
-
-#### Hyperparameter Optimization
-Best parameters vary by horizon:
-
-1. Near-term (t+14h):
-   - Lower learning rate (0.0110)
-   - More regularization
-   - Deeper trees (max_depth: 8)
-
-2. Medium-term (t+24h):
-   - Higher learning rate (0.0693)
-   - Less regularization
-   - Deepest trees (max_depth: 9)
-
-3. Long-term (t+38h):
-   - Moderate learning rate (0.0179)
-   - Strongest regularization
-   - Deep trees (max_depth: 9)
-
-## Visualizations
-
-The model generates several visualizations to help understand the data and model performance. These can be found in the `data` directory:
-
-1. **Price Analysis** (`price_analysis.png`):
-   - Historical price trends
-   - Price volatility patterns
-   - Key statistical indicators
-
-2. **Seasonality Analysis** (`seasonality_analysis.png`):
-   - Daily, weekly, and monthly patterns
-   - Seasonal decomposition of price series
-
-3. **Model Performance** (`test_predictions.png`):
-   - Actual vs predicted prices
-   - Forecast accuracy visualization
-
-4. **Error Analysis** (`error_distribution.png`):
-   - Distribution of prediction errors
-   - Error patterns across different horizons
-
-5. **Feature Importance** (`feature_importance.png`):
-   - Relative importance of different features
-   - Impact of feature categories on predictions
-
-## Feature Engineering Pipeline
+ ## Feature Engineering Pipeline
 
 The feature engineering pipeline creates a rich set of features for the XGBoost model. Here's a detailed overview of the feature creation process:
 
@@ -392,63 +226,68 @@ graph TD
 6. **Target Features** (25 total):
    - Horizons from t+14 to t+38
 
-## Renewable Generation Impact Analysis
+4. **Analyze data and features**
+   ```bash
+   python data/analysis_scripts/analyze_data.py
+   ```
 
-### Training Period (2023-01-01 to 2024-01-29)
+5. **Model Training**
+   The processed features will be ready for use with any of the models in the `models_14_38` directory:
+   
+   **XGBoost Models** (`models_14_38/xgboost/`):
+   1. Core Model (model is optimized for hyperparameters and features):
+      - Optimized Implementation: `OptimizedXGboost.py``
+   
+   2. train models for hyperparameter optimization and cross validation, and feature selection:
+      - `xgboost_hyperopt.py`
+      - `XGboost_topfeaturesselection.py`
+      - `xgboost_CV_multiple_window_sizes.py`
+      - `xgboost_clean_full_features.py`
+      - `xgboost_clean_price_features_only.py`
+      
 
-1. **Solar Generation**:
-   - Mean: 2,379 MW
-   - Price correlation: -0.352
-   - Price impact: €-0.004/MWh per MW
-   - R²: 0.124
+   **Autoregressive Models** (`models_14_38/ar/`):
+   - Rolling Window Implementation: `rolling_ar_windowplaying.py`
+   - Simple Recursive Prediction: `simple_arp_recursive.py`
+   - Linear Set Lags: `linear_setlags_rollingwindowstepsizeone.py`
 
-2. **Total Wind**:
-   - Mean: 2,116 MW
-   - Price correlation: -0.459
-   - Price impact: €-0.012/MWh per MW
-   - R²: 0.210
+   **Linear Models**:
+   1. With Lagged Features (`models_14_38/Linear_with_lags/`):
+      - Feature Selection: `RFECV_linear_with_lags.py`
+      - Simple Implementation: `simple_linear_lags_and_dummies.py`
+   
+   2. Without Lags (`models_14_38/linear_no_lags/`):
+      - Basic Implementation: `simple_no_lags.py`
 
-3. **Offshore Wind**:
-   - Mean: 1,685 MW
-   - Price correlation: -0.387
-   - Price impact: €-0.016/MWh per MW
-   - R²: 0.150
 
-### Test Period (2024-01-29 to 2024-02-29)
 
-1. **Solar Generation**:
-   - Mean: 1,069 MW (55% decrease)
-   - Price correlation: -0.035
-   - R²: -3.173
 
-2. **Total Wind**:
-   - Mean: 2,883 MW (36% increase)
-   - Price correlation: -0.436
-   - R²: -1.366
+## Training Strategy
 
-3. **Offshore Wind**:
-   - Mean: 2,440 MW (45% increase)
-   - Price correlation: -0.318
-   - R²: -1.034
+The models use rolling window time series cross-validation strategy to ensure robust performance and mimic real world day-ahead trading strategy
 
-### Key Findings
+The rolling strategies differ, since for computational power purposes, having a new training fold every day for the XGBOOST is a bit slow. Therefore now for model tweaking purposes, the cross validation is done with folds of 7 days, summing to a total of 12 folds over a test period of 3 months
 
-1. **Wind Generation Impact**:
-   - Stronger price-reducing effect than solar
-   - More stable correlation across periods
-   - Total wind shows better predictive power than offshore alone
+```
+Fold 1:
+- Training:   2021-03-09 → 2025-01-29 (initial window)
+- Validation: 2025-01-29 → 2025-02-05 (next 7 days)
 
-2. **Solar Generation Impact**:
-   - Weaker price correlation
-   - Significant seasonal variation
-   - Less reliable for price prediction
+Fold 2:
+- Training:   2021-03-09 → 2025-01-30 (window grows)
+- Validation: 2025-01-30 → 2025-02-06 (next 7 days)
 
-3. **Market Dynamics**:
-   - Increasing wind generation in test period
-   - Decreasing solar generation (seasonal effect)
-   - Evidence of evolving price-generation relationships
+Hyperparameter optimization is done on by training on 80% of the testdata and validating on the remaining 20% using hyperopt here models_14_38/xgboost/XGboost_training_features_hyperparameters_cv/xgboost_hyperopt.py
 
-## Uncertainty Estimation Methods
+
+## Model Performance
+
+Model performance is evaluated using adapted SMAPE (for correction of infinite values near zero), RMSE, and R². Results are presented for both project phases:
+
+
+
+
+##  Uncertainty Estimation Methods
 
 1. **XGBoost LSS (Location-Scale-Shape)**
    - Parametric approach assuming Gaussian distribution
