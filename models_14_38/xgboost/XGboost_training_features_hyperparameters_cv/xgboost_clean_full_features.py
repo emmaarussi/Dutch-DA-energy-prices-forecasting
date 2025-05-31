@@ -1,5 +1,5 @@
 """
-XGBoost model using full feature set called multivariate_features_nooutliers.csv.
+XGBoost model using full feature set called multivariate_features.csv.
 
 It uses the utils.utils module for utility functions calculate_metrics, plot_feature_importance
 
@@ -122,7 +122,7 @@ def main():
     
     # Load multivariate features
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features_nooutliers.csv')
+    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
     data = pd.read_csv(features_path, index_col=0)
     data.index = pd.to_datetime(data.index)
     

@@ -1,0 +1,120 @@
+\subsection{Feature Importance Analysis}
+An analysis of the model coefficients across key forecast horizons reveals distinct patterns in feature importance. Table \ref{tab:hybrid_feature_importance} presents scaled coefficients for selected variables at the 14-hour, 24-hour, and 38-hour forecast horizons.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\hline
+\textbf{Feature} & \textbf{t+14} & \textbf{t+24} & \textbf{t+38} \\
+\hline
+price\_lag\_1h & 23.96 & 29.46 & 14.37 \\
+price\_lag\_2h & -11.75 & -11.28 & -16.14 \\
+hour\_sin & 18.95 & -3.39 & 18.83 \\
+hour\_cos & -8.90 & 3.20 & -8.34 \\
+price\_lag\_24h & -- & 7.11 & 7.63 \\
+price\_lag\_168h & -- & 7.01 & -- \\
+\hline
+\end{tabular}
+\caption{Scaled coefficients of key features across different horizons}
+\label{tab:hybrid_feature_importance}
+\end{table}
+
+
+Recent price lags, particularly those at one and two hours prior to the forecast target, are consistently among the most influential features across all forecast horizons. This highlights the persistence of short-term autocorrelation in electricity prices. As the forecast horizon increases, longer-term lag features such as price\_lag\_24h and price\_lag\_168h gain relevance, suggesting that daily and weekly seasonality become more influential for forecasts beyond one day. Cyclical time features such as hour\_sin and hour\_cos show varying coefficients across horizons, indicating their interaction with temporal shifts in price dynamics. Calendar effects like holidays and weekends, although not presented in the table, consistently contributed with smaller yet non-negligible coefficients.
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\hline
+\textbf{Forecast Horizon} & \textbf{t+14} & \textbf{t+24} & \textbf{t+38} \
+\hline
+\textbf{result} & \textbf{RMSE} & 17.38 & 21.10 & 22.33 \
+\textbf{result} & \textbf{SMAPE} & 24.49\% & 28.16\% & 29.16\% \
+\textbf{result} & \textbf{R$^2$} & 0.2778 & -0.1009 & -0.2389 \
+\hline
+\end{tabular}
+\caption{Linear with Lag Model Results across Different Horizons}
+\label{tab:linear_lag_model_results}
+\end{table}
+
+
+
+
+\begin{table}[ht]
+\centering
+\caption{Performance of RFECV + OLS Model for Different Horizons}
+\begin{tabular}{|c|l|c|c|c|}
+\hline
+\textbf{Horizon (h)} & \textbf{Selected Features} & \textbf{RMSE} & \textbf{SMAPE} & \textbf{R\textsuperscript{2}} \\ \hline
+\textbf{t+14} & 
+\begin{tabular}[c]{@{}l@{}} 
+day\_of\_week\_cos, \\ 
+price\_eur\_per\_mwh\_lag\_1h, \\ 
+price\_eur\_per\_mwh\_lag\_2h, \\ 
+price\_eur\_per\_mwh\_lag\_10h, \\ 
+price\_eur\_per\_mwh\_lag\_154h 
+\end{tabular} & 15.91 & 22.94\% & 0.3946 \\ \hline
+
+\textbf{t+24} & 
+\begin{tabular}[c]{@{}l@{}} 
+day\_of\_week\_cos, \\ 
+price\_eur\_per\_mwh\_lag\_1h, \\ 
+price\_eur\_per\_mwh\_lag\_2h, \\ 
+price\_eur\_per\_mwh\_lag\_144h 
+\end{tabular} & 17.57 & 24.67\% & 0.2362 \\ \hline
+
+\textbf{t+38} & 
+\begin{tabular}[c]{@{}l@{}} 
+day\_of\_week\_cos, \\ 
+price\_eur\_per\_mwh\_lag\_1h, \\ 
+price\_eur\_per\_mwh\_lag\_2h, \\ 
+price\_eur\_per\_mwh\_lag\_10h, \\ 
+price\_eur\_per\_mwh\_lag\_130h 
+\end{tabular} & 19.33 & 26.21\% & 0.0710 \\ \hline
+\end{tabular}
+\label{tab:rfecv_ols_results}
+\end{table}
+
+
+\begin{table}[ht]
+\centering
+\caption{Performance of RFECV + OLS Model for Different Horizons (Updated)}
+\begin{tabular}{|c|l|c|c|c|}
+\hline
+\textbf{Horizon (h)} & \textbf{Selected Features} & \textbf{RMSE} & \textbf{SMAPE} & \textbf{R\textsuperscript{2}} \\ \hline
+\textbf{t+14} & 
+\begin{tabular}[c]{@{}l@{}} 
+day\_of\_week\_sin, \\ 
+day\_of\_week\_cos, \\ 
+price\_eur\_per\_mwh\_lag\_1h, \\ 
+price\_eur\_per\_mwh\_lag\_9h, \\ 
+price\_eur\_per\_mwh\_lag\_10h, \\ 
+price\_eur\_per\_mwh\_lag\_25h, \\ 
+price\_eur\_per\_mwh\_lag\_58h, \\ 
+price\_eur\_per\_mwh\_lag\_130h, \\ 
+price\_eur\_per\_mwh\_lag\_145h, \\ 
+price\_eur\_per\_mwh\_lag\_154h 
+\end{tabular} & 16.12 & 23.66\% & 0.3788 \\ \hline
+
+\textbf{t+24} & 
+\begin{tabular}[c]{@{}l@{}} 
+day\_of\_week\_sin, \\ 
+day\_of\_week\_cos, \\ 
+price\_eur\_per\_mwh\_lag\_1h, \\ 
+price\_eur\_per\_mwh\_lag\_2h, \\ 
+price\_eur\_per\_mwh\_lag\_23h, \\ 
+price\_eur\_per\_mwh\_lag\_48h, \\ 
+price\_eur\_per\_mwh\_lag\_144h 
+\end{tabular} & 16.84 & 24.34\% & 0.2982 \\ \hline
+
+\textbf{t+38} & 
+\begin{tabular}[c]{@{}l@{}} 
+day\_of\_week\_cos, \\ 
+price\_eur\_per\_mwh\_lag\_10h, \\ 
+price\_eur\_per\_mwh\_lag\_34h, \\ 
+price\_eur\_per\_mwh\_lag\_130h 
+\end{tabular} & 18.88 & 26.16\% & 0.1140 \\ \hline
+\end{tabular}
+\label{tab:rfecv_ols_results_updated}
+\end{table}

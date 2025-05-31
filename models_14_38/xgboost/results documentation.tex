@@ -508,3 +508,103 @@ colsample_bytree: 0.7432934545621622
 min_child_weight: 1.4392030610523023
 booster: gbtree
 opt_rounds: 100
+
+
+optimized:
+
+t+14h horizon:
+Number of predictions: 730
+RMSE: 14.26
+SMAPE: 20.93%
+R2: 0.5136
+
+t+24h horizon:
+Number of predictions: 730
+RMSE: 15.77
+SMAPE: 21.71%
+R2: 0.3851
+
+t+38h horizon:
+Number of predictions: 730
+RMSE: 15.56
+SMAPE: 22.06%
+R2: 0.3983
+
+hyperopt_xgboostlss with 100 features
+
+Hyper-Parameter Optimization successfully finished.
+  Number of finished trials:  30
+  Best trial:
+    Value: 8668.740429599999
+    Params: 
+    eta: 0.08885607466044411
+    max_depth: 2
+    gamma: 1.8846444910698765e-07
+    subsample: 0.7739888475902135
+    colsample_bytree: 0.7402148381306217
+    min_child_weight: 0.21047272389383223
+    booster: gbtree
+    opt_rounds: 100
+
+Best parameters:
+eta: 0.08885607466044411
+max_depth: 2
+gamma: 1.8846444910698765e-07
+subsample: 0.7739888475902135
+colsample_bytree: 0.7402148381306217
+min_child_weight: 0.21047272389383223
+booster: gbtree
+opt_rounds: 100
+
+📊 Evaluation for t+38h horizon:
+Number of predictions: 730
+RMSE: 18.00
+SMAPE: 22.28%
+R2: 0.1945
+
+90% Prediction interval coverage: 83.84%
+
+Residuals Statistics:
+count    730.000000
+mean      -6.945597
+std       16.620234
+min      -67.426088
+25%      -13.113078
+50%       -5.297908
+75%        2.602434
+max       45.800038
+Name: target_t38, dtype: float64
+
+
+
+linear regression direct forecasting results (No CV)
+
+Training and evaluating horizon t+14h...
+Running RFECV for feature selection on t+14h...
+Selected Features for t+14h: ['day_of_week_sin', 'day_of_week_cos', 'price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_9h', 'price_eur_per_mwh_lag_10h', 'price_eur_per_mwh_lag_25h', 'price_eur_per_mwh_lag_58h', 'price_eur_per_mwh_lag_130h', 'price_eur_per_mwh_lag_145h', 'price_eur_per_mwh_lag_154h']
+
+Training and evaluating horizon t+24h...
+Running RFECV for feature selection on t+24h...
+Selected Features for t+24h: ['day_of_week_sin', 'day_of_week_cos', 'price_eur_per_mwh_lag_1h', 'price_eur_per_mwh_lag_2h', 'price_eur_per_mwh_lag_23h', 'price_eur_per_mwh_lag_48h', 'price_eur_per_mwh_lag_144h']
+
+Training and evaluating horizon t+38h...
+Running RFECV for feature selection on t+38h...
+Selected Features for t+38h: ['day_of_week_cos', 'price_eur_per_mwh_lag_10h', 'price_eur_per_mwh_lag_34h', 'price_eur_per_mwh_lag_130h']
+
+t+14h horizon:
+Number of predictions: 730
+RMSE: 16.12
+SMAPE: 23.66%
+R2: 0.3788
+
+t+24h horizon:
+Number of predictions: 730
+RMSE: 16.84
+SMAPE: 24.34%
+R2: 0.2982
+
+t+38h horizon:
+Number of predictions: 730
+RMSE: 18.88
+SMAPE: 26.16%
+R2: 0.1140

@@ -55,7 +55,7 @@ class XGBoostMultivariate:
 
 def main():
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features_nooutliers.csv')
+    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
     data = pd.read_csv(features_path, index_col=0)
     data.index = pd.to_datetime(data.index, utc=True)
     data = data.sort_index()

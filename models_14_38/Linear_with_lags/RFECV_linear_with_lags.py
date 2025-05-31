@@ -29,8 +29,7 @@ from sklearn.feature_selection import RFECV
 
 
 
-
-class SimpleLinearLagsAndDummies:
+class RFECVLinearLagsAndDummies:
     def __init__(self, horizons=range(14, 39)):
         self.horizons = horizons
         self.models = {}  # One model per horizon
@@ -170,66 +169,80 @@ class SimpleLinearLagsAndDummies:
 
 
 def main():
-    print("Loading data...")
+    # Load data
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
     data = pd.read_csv(features_path, index_col=0)
-    data.index = pd.to_datetime(data.index, utc=True).tz_convert('Europe/Amsterdam')
+    data.index = pd.to_datetime(data.index, utc=True)
+    data = data.sort_index()
 
-    model = SimpleLinearLagsAndDummies(horizons=[14, 24, 38])
+    test_start = '2024-01-01'
+    train_data = data[data.index < test_start]
+    test_data = data[data.index >= test_start]
 
-    train_start = pd.Timestamp('2023-01-08', tz='Europe/Amsterdam')
-    train_end = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
-    test_start = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
-    test_end = pd.Timestamp('2024-03-01', tz='Europe/Amsterdam')
+    print(f"Full data range: {data.index.min()} to {data.index.max()}")
+    print(f"Test period: {test_data.index.min()} to {test_data.index.max()}")
 
-    train_df = data[train_start:train_end]
-    test_df = data[test_start:test_end]
-    
-    # Train and evaluate
-    results = {}
-    for horizon in model.horizons:
-        print(f"\nTraining and evaluating horizon t+{horizon}h...")
-        results[horizon] = model.train_and_evaluate(train_df, test_df, horizon)
-    
-    # Plot predictions
-    for horizon in model.horizons:
-        result = results[horizon]
-        predictions_df = result['predictions']
-        metrics = result['test_metrics']
-        print(f"\nt+{horizon}h horizon:")
-        print(f"Number of predictions: {len(predictions_df)}")
-        print(f"RMSE: {metrics['RMSE']:.2f}")
-        print(f"SMAPE: {metrics['SMAPE']:.2f}%")
-        print(f"R2: {metrics['R2']:.4f}")
+    horizons = [14, 24, 38]
+    window_sizes = ['365D']
 
-    # Create output directory
-    out_dir = 'models_14_38/Linear_with_lags/plots'
-    os.makedirs(out_dir, exist_ok=True)
+    for window_size in window_sizes:
+        print(f"\nEvaluating with {window_size} window:")
+        window_predictions = []
 
-    # Plot feature importance for each horizon
-    for horizon in model.horizons:
-        model.plot_feature_importance(
-            horizon,
-            top_n=20,
-            filename=f'{out_dir}/feature_importance_h{horizon}.png'
-        )
-        
-    # Plot predictions over time
-    for horizon in model.horizons:
-        predictions_df = results[horizon]['predictions']
-        plt.figure(figsize=(15, 6))
-        plt.plot(predictions_df.index, predictions_df['actual'], label='Actual', alpha=0.7)
-        plt.plot(predictions_df.index, predictions_df['predicted'], label='Predicted', alpha=0.7)
-        plt.title(f'Actual vs Predicted Prices Over Time (t+{horizon}h)')
-        plt.xlabel('Date')
-        plt.ylabel('Price (EUR/MWh)')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.savefig(f'{out_dir}/predictions_over_time_h{horizon}.png')
-        plt.close()
+        for day in pd.date_range(test_data.index.min(), test_data.index.max(), freq='7D'):
+            forecast_start = pd.Timestamp(day.date()).replace(hour=12, tzinfo=test_data.index.tzinfo)
 
+            if forecast_start in test_data.index:
+                window_end = forecast_start
+                window_start = forecast_start - pd.Timedelta(window_size)
+                train_window = data[(data.index >= window_start) & (data.index < window_end)]
+                test_window = data[(data.index >= forecast_start)]
+
+                model = RFECVLinearLagsAndDummies(horizons=horizons)
+
+                for h in horizons:
+                    result = model.train_and_evaluate(train_window, test_window, h)
+                    pred_df = result['predictions'].copy()
+                    pred_df['horizon'] = h
+                    pred_df['forecast_start'] = forecast_start
+                    pred_df = pred_df.reset_index().rename(columns={'index': 'target_time'})
+                    for _, row in pred_df.iterrows():
+                        window_predictions.append({
+                            'window_size': window_size,
+                            'forecast_start': forecast_start,
+                            'target_time': row['target_time'],
+                            'horizon': row['horizon'],
+                            'predicted': row['predicted'],
+                            'actual': row['actual']
+                        })
+
+        results_df = pd.DataFrame(window_predictions)
+        print(f"\nMetrics for {window_size} window:")
+        for horizon in results_df['horizon'].unique():
+            subset = results_df[results_df['horizon'] == horizon]
+            metrics = calculate_metrics(subset['actual'], subset['predicted'])
+            print(f"  Horizon t+{int(horizon)}h:")
+            for key, val in metrics.items():
+                print(f"    {key}: {val:.2f}")
+
+        # Plotting
+        for h in horizons:
+            h_df = results_df[results_df['horizon'] == h]
+            plt.figure(figsize=(15, 6))
+            plt.plot(h_df['target_time'], h_df['actual'], label='Actual', alpha=0.7)
+            plt.plot(h_df['target_time'], h_df['predicted'], label='Predicted', alpha=0.7)
+            plt.title(f'Actual vs Predicted Prices Over Time (Linear RFECV, {window_size} window, t+{h}h)')
+            plt.xlabel('Date')
+            plt.ylabel('Price (EUR/MWh)')
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+
+            os.makedirs('models_14_38/Linear_with_lags/RFECV_linear_with_lags/plots', exist_ok=True)
+            plt.savefig(f'models_14_38/Linear_with_lags/RFECV_linear_with_lags/plots/predictions_over_time_{window_size}_{h}h.png', dpi=300, bbox_inches='tight')
+            plt.close()
 
 if __name__ == "__main__":
     main()
+    

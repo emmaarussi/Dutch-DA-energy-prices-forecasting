@@ -7,23 +7,64 @@ loss function that is used to predict quantiles of the target variable.
 
 The hyperparameters and the features where already optimized for the XGBoost model, 
 so i will use the same hyperparameters and features for the quantile regression model.
-so basically, this going to be used later for the Sequential Predictive Conformal Inference.
+so basically, this going to be used later for the Sequential Predictive Conformal Inference. Where XGboost is fit on full train and 
+predicts on last 3 months test set. and then the quantile regression model is fit on the last 3 months test set and 
+predicts on the last 3 months test set.
 
+ Residual Autocorrelation Test (Ljung-Box)
+        lb_stat      lb_pvalue
+1    569.962983  5.719643e-126
+2    967.891628  6.683492e-211
+3   1240.777650  1.041581e-268
+4   1425.669744  1.876490e-307
+5   1547.550394   0.000000e+00
+6   1625.150360   0.000000e+00
+7   1675.322139   0.000000e+00
+8   1710.873654   0.000000e+00
+9   1738.729263   0.000000e+00
+10  1757.981011   0.000000e+00
+11  1767.511726   0.000000e+00
+12  1770.279435   0.000000e+00
+13  1770.320808   0.000000e+00
+14  1771.180426   0.000000e+00
+15  1772.944065   0.000000e+00
+16  1774.654984   0.000000e+00
+17  1776.419888   0.000000e+00
+18  1778.063444   0.000000e+00
+19  1778.442436   0.000000e+00
+20  1779.122839   0.000000e+00
 
+final try
+
+📦 Predicting for t+14h
+
+📊 Evaluation for t+14h horizon:
+Number of predictions: 730
+RMSE: 14.46
+SMAPE: 20.27%
+R2: 0.4998
+90% Prediction Interval Coverage: 87.5%
+
+📦 Predicting for t+24h
+
+📊 Evaluation for t+24h horizon:
+Number of predictions: 730
+RMSE: 17.06
+SMAPE: 22.91%
+R2: 0.2799
+90% Prediction Interval Coverage: 86.8%
+
+📦 Predicting for t+38h
+
+📊 Evaluation for t+38h horizon:
+Number of predictions: 730
+RMSE: 15.70
+SMAPE: 20.41%
+R2: 0.3872
+90% Prediction Interval Coverage: 87.1%
 
 
 """
-
-
-
-
-
-
-
-
-
-
-
 
 from sklearn.model_selection import train_test_split
 from xgboost import XGBRegressor
@@ -42,11 +83,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from utils.utils import calculate_metrics
 
 class XGBoostQuantileForecaster:
-    def __init__(self):
-        self.horizons = range(14, 15)  # Only t+14 for now
+    def __init__(self, window_size=100):
+        self.horizons = [14, 24, 38]  # Only 14 24 and 38 
         self.quantiles = [0.05, 0.5, 0.95]
         self.models = {}
         self.scaler = RobustScaler()
+        self.window_size = window_size
 
     def get_hyperparameters(self, horizon):
         if horizon <= 24:
@@ -68,60 +110,78 @@ class XGBoostQuantileForecaster:
                 'gamma': 0.2176, 'random_state': 42
             }
 
-    def prepare_data(self, df, horizon):
-        feature_cols = [col for col in df.columns 
-                        if not col.startswith('target_t')]
-        X = df[feature_cols]
-        y = df[f'target_t{horizon}']
-        return X, y
-
-    def train_and_predict(self, train_window, test_window, window_size_str, horizon):
-        predictions_all = []
-
-        X_train, y_train = self.prepare_data(train_window, horizon)
-        X_test, y_test = self.prepare_data(test_window, horizon)
-
-        if len(X_train) < 100 or len(X_test) == 0:
-            print(f"⚠️ Insufficient data for horizon {horizon}")
+    def train_and_predict(self, residuals, X_test_times, window_size_str, horizon):
+        if len(residuals) < self.window_size + 1:
+            print(f"⚠️ Not enough residuals for horizon {horizon}")
             return pd.DataFrame()
 
-        quantile_predictions = {}
+        # Bouw trainingsset
+        X_train, y_train = self.build_residual_window_dataset(residuals, self.window_size)
 
-        for q in self.quantiles:
-            params = self.get_hyperparameters(horizon)
-            try:
-                model = XGBRegressor(
-                    objective='reg:quantileerror',
-                    quantile_alpha=q,
-                    **params
-                )
-                model.fit(X_train, y_train)
-                self.models[(horizon, q)] = model
-                quantile_predictions[q] = model.predict(X_test)
-            except Exception as e:
-                print(f"⚠️ Error training model for t+{horizon}h, q={q}: {e}")
-                return pd.DataFrame()
+        # Check of trainingsdata geldig is
+        if X_train.shape[0] == 0 or y_train.shape[0] == 0:
+            print(f"❌ Empty training data for t+{horizon}h")
+            return pd.DataFrame()
 
-        if all(q in quantile_predictions for q in self.quantiles):
-            for idx, target_time in enumerate(y_test.index):
-                predictions_all.append({
-                    'window_size': window_size_str,
-                    'target_time': target_time,
-                    'horizon': horizon,
-                    'actual': y_test.iloc[idx],
-                    'q05': quantile_predictions[0.05][idx],
-                    'q50': quantile_predictions[0.5][idx],
-                    'q95': quantile_predictions[0.95][idx]
-                })
+        print(f"✅ Training data shape for t+{horizon}h: X={X_train.shape}, y={y_train.shape}")
 
-        residuals = y_test.values - quantile_predictions[0.5]
-        self.residuals = pd.Series(residuals, index=y_test.index)
+        # Init collecties
+        quantile_predictions = {q: [] for q in self.quantiles}
+        timestamps = []
+
+        # Sliding prediction op testset
+        for t_idx in range(self.window_size, len(X_test_times) - horizon):
+            x_window = residuals.iloc[t_idx - self.window_size:t_idx].values
+            x_input = x_window.reshape(1, -1)
+
+            for q in self.quantiles:
+                if (horizon, q) not in self.models:
+                    params = self.get_hyperparameters(horizon)
+                    model = XGBRegressor(
+                        objective='reg:quantileerror',
+                        quantile_alpha=q,
+                        **params
+                    )
+                    model.fit(X_train, y_train)
+                    self.models[(horizon, q)] = model
+
+                model = self.models[(horizon, q)]
+                pred = model.predict(x_input)[0]
+                quantile_predictions[q].append(pred)
+
+            timestamps.append(X_test_times[t_idx + horizon])
+
+        # Resultaten structureren
+        predictions_all = []
+        for i, ts in enumerate(timestamps):
+            predictions_all.append({
+                'window_size': window_size_str,
+                'target_time': ts,
+                'horizon': horizon,
+                'q05': quantile_predictions[0.05][i],
+                'q50': quantile_predictions[0.5][i],
+                'q95': quantile_predictions[0.95][i],
+            })
 
         results_df = pd.DataFrame(predictions_all)
-        if not results_df.empty:
-            results_df['target_time'] = pd.to_datetime(results_df['target_time'])
-            results_df = results_df.sort_values('target_time')
+        results_df['target_time'] = pd.to_datetime(results_df['target_time'], utc=True)
+        results_df = results_df.sort_values('target_time')
         return results_df
+
+
+    def build_residual_window_dataset(self, residuals, window_size):
+        X, y = [], []
+        for i in range(window_size, len(residuals)):
+            window = residuals.iloc[i - window_size:i].values
+            if len(window) == window_size:
+                X.append(window)
+                y.append(residuals.iloc[i])
+        if len(X) == 0 or len(y) == 0:
+            print("⚠️ No valid training samples constructed from residuals.")
+        return np.vstack(X), np.array(y)
+
+
+
 
     def test_residual_dependence(self, lags=20):
         if hasattr(self, 'residuals') and not self.residuals.empty:
@@ -211,14 +271,16 @@ def main():
 
     # Initialize and train model
     model = XGBoostQuantileForecaster()
-    results_df = model.train_and_predict(train_df, test_df, '12m', 14)
-    model.test_residual_dependence()
-
-    if results_df.empty:
-        print("❌ No predictions to evaluate or plot.")
-        return
-
+    
+    # Loop through all horizons
     for horizon in model.horizons:
+        print(f"\n📦 Predicting for t+{horizon}h")
+        results_df = model.train_and_predict(train_df, test_df, '12m', horizon)
+
+        if results_df.empty:
+            print(f"❌ No predictions for t+{horizon}h.")
+            continue
+
         model.plot_predictions(results_df, horizon)
         model.evaluate_predictions(results_df, horizon)
 

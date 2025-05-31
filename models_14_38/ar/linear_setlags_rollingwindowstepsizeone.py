@@ -7,9 +7,29 @@ Linear model with lagged price values respective of the forecast horizon
 - Weekly pattern: price_lag_168h
 
 Rolling forecast with a window size of 90D and horizons [14, 24, 38]
-predicts step wise for each horizon 1 value at a time, then updates the window and continues. 
-quite a slow model since it makes about 1400 predictions per horizon
- --
+predicts step wise
+ 
+Metrics for 365D window:
+  Horizon t+14h:
+    MAE: 12.94
+    RMSE: 18.88
+    SMAPE: 46.22
+    WMAPE: 27.29
+    R2: 0.57
+  Horizon t+24h:
+    MAE: 14.08
+    RMSE: 25.93
+    SMAPE: 21.77
+    WMAPE: 20.21
+    R2: -1.70
+  Horizon t+38h:
+    MAE: 20.28
+    RMSE: 29.14
+    SMAPE: 57.52
+    WMAPE: 40.56
+    R2: -0.00
+
+
 """
 
 import pandas as pd
@@ -25,25 +45,21 @@ from statsmodels.tools import add_constant
 ##from statsmodels.stats.diagnostic import acorr_ljungbox
 
 
-def SimpleARModel_fixedlags(train_data, forecast_start, window_size='90D', horizons=[14, 24, 38]):
+def SimpleARModel_fixedlags(train_data, forecast_start, window_size='365D', horizons=[14, 24, 38]):
     """
-    Forecast electricity prices for multiple horizons using lagged features
-    relative to the forecast target time (t + h).
-    
-    Lags used: 1–24 hours and 168 hours (1 week) before each forecast target time.
+    Forecast electricity prices for multiple horizons using past lags at time t to predict price at t+h.
+    Avoids lookahead bias by ensuring all lags are from before t.
     """
     predictions = {}
-    
-    # Univariate series
     history = train_data['current_price']
     
     for h in horizons:
-        forecast_time = forecast_start + pd.Timedelta(hours=h)
-        window_start = forecast_time - pd.Timedelta(window_size)
-        window_data = history[(history.index >= window_start) & (history.index < forecast_time)].copy()
+        window_end = forecast_start
+        window_start = window_end - pd.Timedelta(window_size)
+        window_data = history[(history.index >= window_start) & (history.index < window_end)].copy()
         window_data = window_data.asfreq('h')
 
-        if len(window_data) < 200:
+        if len(window_data) < 500:
             print(f"Skipping horizon t+{h}: not enough data in window.")
             continue
 
@@ -51,37 +67,30 @@ def SimpleARModel_fixedlags(train_data, forecast_start, window_size='90D', horiz
         y_list = []
 
         for t in window_data.index:
+            # t is the input time; y is at t + h
             target_time = t + pd.Timedelta(hours=h)
             if target_time not in history.index:
                 continue
 
-            # Get lags relative to forecast target (t + h)
+            lags_ok = True
             lag_values = []
-            valid = True
-            for lag in range(1, 25):  # 1 to 24 hours before target
-                lag_time = target_time - pd.Timedelta(hours=lag)
+
+            for lag in range(1, 25):  # hourly lags
+                lag_time = t - pd.Timedelta(hours=lag)
                 if lag_time in history.index:
                     lag_values.append(history[lag_time])
                 else:
-                    valid = False
+                    lags_ok = False
                     break
 
-           # two day lag: 48h before target
-            two_day_lag_time = target_time - pd.Timedelta(hours=48)
-            if two_day_lag_time in history.index:
-                lag_values.append(history[two_day_lag_time])
-            else:
-                valid = False
-            
-            
-            # Weekly lag: 168h before target
-            weekly_lag_time = target_time - pd.Timedelta(hours=168)
-            if weekly_lag_time in history.index:
-                lag_values.append(history[weekly_lag_time])
-            else:
-                valid = False
+            for extra_lag in [48, 168]:  # additional daily/weekly lags
+                lag_time = t - pd.Timedelta(hours=extra_lag)
+                if lag_time in history.index:
+                    lag_values.append(history[lag_time])
+                else:
+                    lags_ok = False
 
-            if valid:
+            if lags_ok:
                 X_list.append(lag_values)
                 y_list.append(history[target_time])
 
@@ -89,117 +98,120 @@ def SimpleARModel_fixedlags(train_data, forecast_start, window_size='90D', horiz
             print(f"Skipping horizon t+{h}: not enough training samples.")
             continue
 
-        X = np.array(X_list)
+        X = add_constant(np.array(X_list), has_constant='add')
         y = np.array(y_list)
-        X = add_constant(X, has_constant="add")
-
         model = OLS(y, X).fit()
 
-        # Create lagged input for forecast_time (i.e., t + h)
-        forecast_lags = []
+        # Forecast from current forecast_start time
+        lag_values = []
         valid = True
-        for lag in range(1, 25):  # lags 1–24h before forecast target
-            lag_time = forecast_time - pd.Timedelta(hours=lag)
+
+        for lag in range(1, 25):
+            lag_time = forecast_start - pd.Timedelta(hours=lag)
             if lag_time in history.index:
-                forecast_lags.append(history[lag_time])
+                lag_values.append(history[lag_time])
             else:
                 valid = False
                 break
 
-        # Add 48h lag
-        two_day_lag_time = forecast_time - pd.Timedelta(hours=48)
-        if two_day_lag_time in history.index:
-            forecast_lags.append(history[two_day_lag_time])
-        else:
-            valid = False
-
-        weekly_lag_time = forecast_time - pd.Timedelta(hours=168)
-        if weekly_lag_time in history.index:
-            forecast_lags.append(history[weekly_lag_time])
-        else:
-            valid = False
+        for extra_lag in [48, 168]:
+            lag_time = forecast_start - pd.Timedelta(hours=extra_lag)
+            if lag_time in history.index:
+                lag_values.append(history[lag_time])
+            else:
+                valid = False
 
         if not valid:
             print(f"Skipping forecast for t+{h}: missing lag values.")
             continue
 
-        X_pred = add_constant(np.array([forecast_lags]), has_constant="add")
+        X_pred = add_constant(np.array([lag_values]), has_constant='add')
         y_pred = model.predict(X_pred)[0]
-        predictions[forecast_time] = y_pred
 
+        forecast_time = forecast_start + pd.Timedelta(hours=h)
+        predictions[forecast_time] = y_pred
 
     return predictions
 
 
+
 def main():
     # Load data
-    print("Loading data...")
-    data = pd.read_csv('data/processed/multivariate_features.csv', index_col=0)
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
+    data = pd.read_csv(features_path, index_col=0)
     data.index = pd.to_datetime(data.index, utc=True)
-    data = data.asfreq('h')  # Lowercase 'h' to avoid FutureWarning
+    data = data.sort_index()
 
-    # Define test window
-    train_end = pd.Timestamp('2024-01-01', tz='UTC')
-    test_end = pd.Timestamp('2024-03-01', tz='UTC')
+    # Split into training and test data
+    test_start = '2024-01-01'
+    train_data = data[data.index < test_start]
+    test_data = data[data.index >= test_start]
 
-    # Split for display/logging
-    train_data = data[data.index < train_end]
-    test_data = data[data.index >= train_end]
+    print(f"Full data range: {data.index.min()} to {data.index.max()}")
+    print(f"Test period: {test_data.index.min()} to {test_data.index.max()}")
 
-    print(f"Data shape: {data.shape}")
-    print(f"Training period: {train_data.index[0]} to {train_data.index[-1]}")
-    print(f"Test period: {test_data.index[0]} to {test_data.index[-1]}")
-    
+    # For each day at 12:00 in test period
+    all_predictions = []
     horizons = [14, 24, 38]
-    all_predictions = {h: [] for h in horizons}
+    window_sizes = ['365D']
 
-    # Rolling forecast starts after enough history is available
-    rolling_start = train_end
-    rolling_dates = pd.date_range(start=rolling_start, end=test_end - pd.Timedelta(hours=max(horizons)), freq='h')
+    for window_size in window_sizes:
+        print(f"\nEvaluating with {window_size} window:")
+        window_predictions = []
 
-    for forecast_start in tqdm(rolling_dates, desc="Rolling forecasts"):
-        # Include all data up to the forecast_start + horizon
-        relevant_data = data[data.index < forecast_start + pd.Timedelta(hours=max(horizons))]
-        preds = SimpleARModel_fixedlags(relevant_data, forecast_start)
+        for day in pd.date_range(test_data.index.min(), test_data.index.max(), freq='7D'):
+            forecast_start = pd.Timestamp(day.date()).replace(hour=12, tzinfo=test_data.index.tzinfo)
+            
+            if forecast_start in test_data.index:
+                # Make predictions for this day
+                predictions = SimpleARModel_fixedlags(data, forecast_start, window_size, horizons)
+                
+                # Record predictions with their actual values
+                for target_time, pred_price in predictions.items():
+                    if target_time in test_data.index:
+                        actual_price = test_data.loc[target_time, 'current_price']
+                        window_predictions.append({
+                            'window_size': window_size,
+                            'forecast_start': forecast_start,
+                            'target_time': target_time,
+                            'horizon': (target_time - forecast_start).total_seconds() / 3600,
+                            'predicted': pred_price,
+                            'actual': actual_price
+                        })
 
+        
+
+        results_df = pd.DataFrame(window_predictions)
+        print(f"\nMetrics for {window_size} window:")
+
+        for horizon in results_df['horizon'].unique():
+            subset = results_df[results_df['horizon'] == horizon]
+            metrics = calculate_metrics(subset['actual'], subset['predicted'])
+            print(f"  Horizon t+{int(horizon)}h:")
+            for key, val in metrics.items():
+                print(f"    {key}: {val:.2f}")
+
+        
+       # Plot each horizon separately
         for h in horizons:
-            ts = forecast_start + pd.Timedelta(hours=h)
-            if ts in preds:
-                all_predictions[h].append((ts, preds[ts]))
+            h_df = results_df[results_df['horizon'] == h]
+            
+            plt.figure(figsize=(15, 6))
+            plt.plot(h_df['target_time'], h_df['actual'], label='Actual', alpha=0.7)
+            plt.plot(h_df['target_time'], h_df['predicted'], label='Predicted', alpha=0.7)
+            plt.title(f'Actual vs Predicted Prices Over Time (AR, {window_size} window, t+{h}h)')
+            plt.xlabel('Date')
+            plt.ylabel('Price (EUR/MWh)')
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
 
-    # Assemble prediction DataFrames
-    forecast_dfs = {}
-    for h in horizons:
-        df = pd.DataFrame(all_predictions[h], columns=['timestamp', f'forecast_t{h}'])
-        df.set_index('timestamp', inplace=True)
-        forecast_dfs[h] = df
-
-    test_pred = pd.concat(forecast_dfs.values(), axis=1)
-    
-    # Evaluate and plot
-    print("\nTest metrics:")
-    for h in horizons:
-        y_true = test_data['current_price'].dropna()
-        y_pred = test_pred[f'forecast_t{h}'].dropna()
-
-        common_idx = y_true.index.intersection(y_pred.index)
-        y_true = y_true.loc[common_idx]
-        y_pred = y_pred.loc[common_idx]
-
-        metrics = calculate_metrics(y_true, y_pred)
-        
-        print(f"\nHorizon t+{h}:")
-        print(f"MAE: {metrics['mae']:.2f}")
-        print(f"RMSE: {metrics['rmse']:.2f}")
-        print(f"R2: {metrics['r2']:.2f}")
-        print(f"SMAPE: {metrics['smape']:.2f}%")
-        
-        plt = plot_predictions(common_idx, y_true, y_pred, h,
-                               f'Linear Model with lagged price values: {h}-Hour Ahead Forecast vs Actual Values')
-        os.makedirs('models_14_38/ar/plots/linear_with_lags', exist_ok=True)
-        plt.savefig(f'models_14_38/ar/plots/linear_with_lags/forecast_{h}h.png', dpi=300, bbox_inches='tight')
-        plt.close()
-
+            # Save to the same kind of directory structure
+            os.makedirs('models_14_38/ar/plots/plots_ar_setlags', exist_ok=True)
+            plt.savefig(f'models_14_38/ar/plots/plots_ar_setlags/predictions_over_time_{window_size}_{h}h.png', dpi=300, bbox_inches='tight')
+            plt.close()
 
 if __name__ == "__main__":
+    os.makedirs('models_14_38/ar/plots_ar_setlags', exist_ok=True)
     main()

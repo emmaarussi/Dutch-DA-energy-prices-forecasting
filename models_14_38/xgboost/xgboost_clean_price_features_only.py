@@ -1,46 +1,25 @@
 """
-XGBoost model optimized for features and hyperparameters. 
+XGBoost model for medium to long-term energy price forecasting using only price and calendar features.
+Excludes all features related to wind, coal, solar, and consumption.
+t+14h horizon:
+Number of predictions: 730
+RMSE: 17.23
+SMAPE: 28.35%
+R2: 0.2899
 
-This model will be used to construct CI later with different methods.
+t+24h horizon:
+Number of predictions: 730
+RMSE: 17.99
+SMAPE: 29.97%
+R2: 0.1996
 
-Training on full dataset for horizon t+14h...
-Completed training for horizon t+14h with metrics:
-MAE: 2.4816
-RMSE: 3.3736
-SMAPE: 10.5214
-WMAPE: 2.6164
-R2: 0.9937
-
-Training on full dataset for horizon t+24h...
-Completed training for horizon t+24h with metrics:
-MAE: 2.5129
-RMSE: 3.3885
-SMAPE: 10.4694
-WMAPE: 2.6565
-R2: 0.9937
-
-Training on full dataset for horizon t+38h...
-Completed training for horizon t+38h with metrics:
-MAE: 1.1615
-RMSE: 1.6038
-SMAPE: 8.1639
-WMAPE: 1.2272
-R2: 0.9986
-
-
-t+14h (14 hours ahead):
-RMSE: 17.46
-SMAPE: 24.98%
-R²: 0.38
-t+24h (24 hours ahead):
-RMSE: 17.59
-SMAPE: 23.61%
-R²: 0.36
-t+38h (38 hours ahead):
-RMSE: 19.54
-SMAPE: 26.59%
-R²: 0.20
-
+t+38h horizon:
+Number of predictions: 730
+RMSE: 16.08
+SMAPE: 24.55%
+R2: 0.3571
+Exit Code 0
+It uses the utils.utils module for utility functions calculate_metrics, plot_feature_importance.
 """
 import pandas as pd
 import numpy as np
@@ -51,21 +30,25 @@ import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from utils.utils import calculate_metrics, plot_feature_importance
 
-class XGBoostOptimized:
+class XGBoostclean:
     def __init__(self, horizons=range(14, 39)):
         self.horizons = horizons
         
     def prepare_data(self, data, horizon):
-        """Prepare features and target for a specific horizon"""
+        """Prepare features and target for a specific horizon, excluding wind, coal, solar, and consumption features"""
         # Define excluded feature patterns
-        #excluded_patterns = [
-            #'forecast'
-        #]
+        excluded_patterns = [
+            'wind', 'Wind', 'WIND',
+            'solar', 'Solar', 'SOLAR',
+            'coal', 'Coal', 'COAL',
+            'consumption', 'Consumption', 'CONSUMPTION',
+            'load', 'Load', 'LOAD'
+        ]
         
         # Get all columns except target columns and excluded features
         feature_cols = [col for col in data.columns 
-                       if not col.startswith('target_t')]#and 
-                       #not any(pattern in col for pattern in excluded_patterns)]
+                       if not col.startswith('target_t') and 
+                       not any(pattern in col for pattern in excluded_patterns)]
         
         X = data[feature_cols]
         y = data[f'target_t{horizon}']
@@ -127,10 +110,6 @@ class XGBoostOptimized:
                 'gamma': 0.2176, 'random_state': 42
             }
 
-
-    
-
-
 def main():
     print("Starting main function...")
 
@@ -174,7 +153,7 @@ def main():
                 train_window = data[(data.index >= window_start) & (data.index < window_end)]
                 test_window = data[(data.index >= forecast_start)]
 
-                model = XGBoostOptimized(horizons=horizons)
+                model = XGBoostclean(horizons=horizons)
 
                 for h in horizons:
                     result = model.train_and_evaluate(train_window, test_window, h)
@@ -214,8 +193,8 @@ def main():
             plt.grid(True)
             plt.tight_layout()
 
-            os.makedirs('models_14_38/xgboost/optimized/plots', exist_ok=True)
-            plt.savefig(f'models_14_38/xgboost/optimized/plots/predictions_over_time_{window_size}_{h}h.png', dpi=300, bbox_inches='tight')
+            os.makedirs('models_14_38/xgboost/XGboost_training_features_hyperparameters_cv/plots', exist_ok=True)
+            plt.savefig(f'models_14_38/xgboost/XGboost_training_features_hyperparameters_cv/plots/predictions_over_time_{window_size}_{h}h.png', dpi=300, bbox_inches='tight')
             plt.close()
 
 

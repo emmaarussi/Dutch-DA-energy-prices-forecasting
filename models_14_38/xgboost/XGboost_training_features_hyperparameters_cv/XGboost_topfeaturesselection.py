@@ -1,3 +1,5 @@
+
+
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -69,21 +71,21 @@ class XGBoostclean:
     def get_hyperparameters(self, horizon):
         if horizon <= 24:
             return {
-                'max_depth': 6, 'learning_rate': 0.03, 'n_estimators': 2500,
-                'min_child_weight': 4, 'subsample': 0.8, 'colsample_bytree': 0.8,
-                'gamma': 0.2, 'random_state': 42
+                'max_depth': 8, 'learning_rate': 0.0110, 'n_estimators': 1300,
+                'min_child_weight': 3.1910, 'subsample': 0.8837, 'colsample_bytree': 0.8369,
+                'gamma': 0.1393, 'random_state': 42
             }
         elif horizon <= 31:
             return {
-                'max_depth': 6, 'learning_rate': 0.025, 'n_estimators': 2800,
-                'min_child_weight': 5, 'subsample': 0.7, 'colsample_bytree': 0.7,
-                'gamma': 0.25, 'random_state': 42
+                'max_depth': 9, 'learning_rate': 0.0693, 'n_estimators': 1400,
+                'min_child_weight': 1.4524, 'subsample': 0.7879, 'colsample_bytree': 0.8769,
+                'gamma': 0.1656, 'random_state': 42
             }
-        else:
+        else:  # for t+38h
             return {
-                'max_depth': 6, 'learning_rate': 0.02, 'n_estimators': 3000,
-                'min_child_weight': 6, 'subsample': 0.6, 'colsample_bytree': 0.6,
-                'gamma': 0.3, 'random_state': 42
+                'max_depth': 9, 'learning_rate': 0.0179, 'n_estimators': 1100,
+                'min_child_weight': 5.4722, 'subsample': 0.8081, 'colsample_bytree': 0.8531,
+                'gamma': 0.2176, 'random_state': 42
             }
 
 def main():

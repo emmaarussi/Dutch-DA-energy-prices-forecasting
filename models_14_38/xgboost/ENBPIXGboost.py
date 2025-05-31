@@ -1,8 +1,33 @@
 
 
 """
+
+first try of ENBPI
+
+Processing horizon t+14h...
+Coverage: 33.9%, Mean Width: 22.34
+
+Processing horizon t+24h...
+Coverage: 31.5%, Mean Width: 21.41
+
+Processing horizon t+38h...
+
+second try
+
+Processing horizon t+14h...
+Coverage: 69.2%, Mean Width: 46.43
+
+Processing horizon t+24h...
+Coverage: 66.3%, Mean Width: 45.66
+
+Processing horizon t+38h...
+Coverage: 64.8%, Mean Width: 45.29
+
+✅ Completed ENBPI calibration in 1096.97 seconds
+
+
 XGBoost model with ENBPI (Ensemble Neural Bootstrap Prediction Interval) for uncertainty quantification.
-Combines the XGBoost model from xgboost_clean_full_features.py with prediction intervals from ENBPIXGboost.py.
+Combines the XGBoost model from OptimizedXGboost.py with prediction intervals from ENBPIXGboost.py.
 """
 import pandas as pd
 import numpy as np
@@ -13,9 +38,10 @@ import time
 import matplotlib.pyplot as plt
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from utils.utils import calculate_metrics, plot_feature_importance
-from XGboostCV.xgboost_clean_full_features import XGBoostclean
+from models_14_38.xgboost.OptimizedXGboost import XGBoostOptimized as XGBoostOptimized
 
-class XGBoostENBPI(XGBoostclean):
+
+class XGBoostENBPI(XGBoostOptimized):
     def __init__(self, horizons=range(14, 39)):
         super().__init__(horizons)
         self.ensemble_fitted_models = []  # Store bootstrap models
@@ -38,43 +64,51 @@ class XGBoostENBPI(XGBoostclean):
         n = a.strides[0]
         return np.lib.stride_tricks.as_strided(a, shape=(nrows, L), strides=(S*n, n))
     
-    def fit_bootstrap_models(self, X_train, y_train, X_test, y_test, B=20):
-        """Train B bootstrap models and calculate predictions"""
+    def fit_bootstrap_models_with_OOB(self, X_train, y_train, X_test, B=20):
         n = len(X_train)
         n1 = len(X_test)
         boot_samples_idx = self.generate_bootstrap_samples(n, n, B)
-        boot_predictions = np.zeros((B, (n+n1)), dtype=float)
-        
+        boot_predictions = np.zeros((B, n + n1))
+        in_boot_sample = np.zeros((B, n), dtype=bool)
+        oob_residuals = []
+
         for b in range(B):
-            # Get hyperparameters for current horizon
             params = self.get_hyperparameters(self.current_horizon)
             model = xgb.XGBRegressor(**params)
-            
-            # Train on bootstrap sample
-            model.fit(X_train[boot_samples_idx[b]], y_train[boot_samples_idx[b]])
-            
-            # Store model
+            sample_idx = boot_samples_idx[b]
+            model.fit(X_train[sample_idx], y_train[sample_idx])
             self.ensemble_fitted_models.append(model)
-            
-            # Make predictions on both train and test data
-            boot_predictions[b] = model.predict(np.vstack((X_train, X_test)))
-            
-        return boot_predictions
+
+            preds = model.predict(np.vstack((X_train, X_test)))
+            boot_predictions[b] = preds
+            in_boot_sample[b, sample_idx] = True
+
+        # Compute OOB residuals
+        for i in range(n):
+            oob_models = ~in_boot_sample[:, i]
+            if np.sum(oob_models) > 0:
+                oob_pred = np.mean(boot_predictions[oob_models, i])
+                resid = abs(y_train[i] - oob_pred)
+            else:
+                resid = abs(y_train[i])  # fallback
+            oob_residuals.append(resid)
+
+        return boot_predictions, np.array(oob_residuals)
+
     
-    def compute_prediction_intervals(self, X_train, y_train, X_test, y_test, alpha=0.1, B=100, stride=1):
+    def compute_prediction_intervals(self, X_train, y_train, X_test, y_test, test_index, alpha=0.1, B=100, stride=1):
         """Compute prediction intervals using ENBPI approach"""
         self.current_horizon = self.horizons[0]  # Set current horizon
         
         # Train bootstrap models and get predictions
-        boot_predictions = self.fit_bootstrap_models(X_train, y_train, X_test, y_test, B)
-        
-        # Calculate residuals
+        boot_predictions, self.ensemble_online_resid = self.fit_bootstrap_models_with_OOB(
+            X_train, y_train, X_test, B
+        )
+
         n = len(X_train)
-        train_preds = np.mean(boot_predictions[:, :n], axis=0)
-        self.ensemble_online_resid = y_train - train_preds
         
         # Calculate prediction intervals for test set
-        test_preds = np.mean(boot_predictions[:, n:], axis=0)
+        test_preds = np.median(boot_predictions[:, n:], axis=0)
         
         # Calculate interval width using strided residuals
         width = np.percentile(self.strided_app(
@@ -83,93 +117,75 @@ class XGBoostENBPI(XGBoostclean):
             axis=-1
         )
         
-        lower_quantile = np.percentile(self.ensemble_online_resid, alpha * 100)
-        upper_quantile = np.percentile(self.ensemble_online_resid, (1 - alpha) * 100)
+        q = np.percentile(self.ensemble_online_resid, (1 - alpha) * 100)
 
-        # Create prediction intervals
-        lower = test_preds + lower_quantile
-        upper = test_preds + upper_quantile
+        lower = test_preds - q
+        upper = test_preds + q
+
         
         return pd.DataFrame({
             'predicted': test_preds,
             'lower': lower,
             'upper': upper,
-            'actual': test_df[f'target_t{self.current_horizon}'].values
-        }, index=test_df.index)
+            'actual': y_test
+        }, index=test_index)
 
 def main():
-
-    start_time = time.time()  # ⏱ Start timer
-    # Load data
+    start_time = time.time()
+    
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features_nooutliers.csv')
-    data = pd.read_csv(features_path, index_col=0)
-    data.index = pd.to_datetime(data.index)
     
-    # Train-test split
-    train_start = pd.Timestamp('2023-01-08', tz='Europe/Amsterdam')
-    train_end = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
-    test_start = pd.Timestamp('2024-01-29', tz='Europe/Amsterdam')
-    test_end = pd.Timestamp('2024-03-01', tz='Europe/Amsterdam')
+    # Load training data (Jan 2023 – Mar 2024)
+    train_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features_selectedXGboost.csv')
+    print(f"\nLoading training data from: {train_path}")
+    train_df = pd.read_csv(train_path, index_col=0)
+    train_df.index = pd.to_datetime(train_df.index)
+    print(f"Training data loaded, date range: {train_df.index.min()} to {train_df.index.max()}")
     
-    train_df = data[train_start:train_end]
-    test_df = data[test_start:test_end]
-    
-    # Initialize model for only horizon 14
-    model = XGBoostENBPI(horizons=[14])
-    
-    # Train and evaluate with prediction intervals
+    # Load test data from separate calibration set
+    test_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features_testset_selectedXGboost.csv')
+    print(f"\nLoading test data from: {test_path}")
+    test_df = pd.read_csv(test_path, index_col=0)
+    test_df.index = pd.to_datetime(test_df.index)
+    print(f"Test data loaded, date range: {test_df.index.min()} to {test_df.index.max()}")
+
+    # Initialize model
+    model = XGBoostENBPI(horizons=[14, 24, 38])
+
     for horizon in model.horizons:
         print(f"\nProcessing horizon t+{horizon}h...")
-        
-        # Prepare data
+
         X_train, y_train = model.prepare_data(train_df, horizon)
         X_test, y_test = model.prepare_data(test_df, horizon)
-        
-        # Compute prediction intervals
+
         results = model.compute_prediction_intervals(
             X_train.values, y_train.values,
-            X_test.values, y_test.values,
-            alpha=0.1,  # 90% prediction intervals
-            B=20,      # Number of bootstrap samples
-            stride=1
+            X_test.values, y_test.values, test_df.index,
+            alpha=0.1, B=20, stride=1
         )
-        
-        # Calculate coverage and mean width
-        coverage = np.mean((results['actual'] >= results['lower']) & 
-                          (results['actual'] <= results['upper'])) * 100
+
+        # Coverage and width
+        coverage = np.mean((results['actual'] >= results['lower']) & (results['actual'] <= results['upper'])) * 100
         mean_width = np.mean(results['upper'] - results['lower'])
-        
-        print(f"90% Prediction Interval Coverage: {coverage:.1f}%")
-        print(f"Mean Interval Width: {mean_width:.2f}")
-        
-        # Plot results
-        plt.figure(figsize=(15, 6))
-        plt.fill_between(results.index, 
-                        results['lower'], 
-                        results['upper'], 
-                        alpha=0.3, 
-                        label='90% Prediction Interval')
-        plt.plot(results.index, results['predicted'], 
-                label='Predicted', linestyle='--')
-        plt.plot(results.index, y_test, 
-                label='Actual', color='black')
-        plt.title(f'Price Predictions with Uncertainty Bands (t+{horizon}h)')
-        plt.xlabel('Time')
-        plt.ylabel('Price (EUR/MWh)')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        
-        # Save plot
-        out_dir = 'models_14_38/xgboost/plots/enbpi'
+
+        print(f"Coverage: {coverage:.1f}%, Mean Width: {mean_width:.2f}")
+
+        # Plot
+        out_dir = 'models_14_38/xgboost/plots/enbpi_calibrated'
         os.makedirs(out_dir, exist_ok=True)
-        plt.savefig(f'{out_dir}/predictions_with_intervals_h{horizon}.png')
+
+        plt.figure(figsize=(15, 6))
+        plt.fill_between(results.index, results['lower'], results['upper'], alpha=0.3, label='90% PI')
+        plt.plot(results.index, results['predicted'], linestyle='--', label='Predicted')
+        plt.plot(results.index, results['actual'], color='black', label='Actual')
+        plt.title(f'ENBPI Forecast (t+{horizon}h)')
+        plt.xlabel('Date'); plt.ylabel('Price (EUR/MWh)')
+        plt.grid(True); plt.legend(); plt.tight_layout()
+        plt.savefig(f'{out_dir}/enbpi_forecast_h{horizon}.png')
         plt.close()
- 
-    end_time = time.time()  # ⏱ Stop timer
-    
-    print(f"\nTotal execution time: {end_time - start_time:.2f} seconds")
+
+    print(f"\n✅ Completed ENBPI calibration in {time.time() - start_time:.2f} seconds")
+
     
 if __name__ == "__main__":
     main()

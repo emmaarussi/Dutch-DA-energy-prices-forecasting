@@ -1,7 +1,6 @@
 """
 XGBoost model with hyperopt optimization for medium to long-term energy price forecasting.
 Uses hyperopt to find optimal hyperparameters for each forecast horizon.
-RMSE optimization
 this model is already considerably slower due to the hyperparameter optimization and the rolling window approach,
 which retrains the model for each window and each horizon on a weekly basis.
 Also the window size is quite big, so that adds time too for training
@@ -146,51 +145,6 @@ class XGBoostHyperopt:
         return model, metrics, importance
 
 def main():
-    # Load multivariate features
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
-    data = pd.read_csv(features_path, index_col=0)
-    data.index = pd.to_datetime(data.index, utc=True)
-    data = data.sort_index() # Ensure tz-aware
-
-    # Define train-test split
-    train_start = pd.Timestamp('2023-01-08', tz='UTC')
-    train_end = pd.Timestamp('2024-01-29', tz='UTC')
-    test_start = pd.Timestamp('2024-01-29', tz='UTC')
-    test_end = pd.Timestamp('2024-03-01', tz='UTC')
-
-    train_df = data[train_start:train_end]
-    test_df = data[test_start:test_end]
-    train_data = train_df  # <-- define this for the next step
-
-    # Initialize model
-    model = XGBoostHyperopt(horizons=[14, 24, 38])  # Choose horizons of interest
-
-    # Extract best hyperparameters for each horizon
-    train_size = int(len(train_data) * 0.8)
-    opt_train = train_data.iloc[:train_size]
-    opt_valid = train_data.iloc[train_size:]
-
-    for horizon in model.horizons:
-        print(f"\n🔍 Optimizing hyperparameters for t+{horizon}h...")
-        best = model.optimize_hyperparameters(opt_train, opt_valid, horizon, max_evals=30)
-
-        print(f"\n✅ Best hyperparameters for t+{horizon}h:")
-        for param, value in best.items():
-            print(f"{param}: {value:.4f}" if isinstance(value, float) else f"{param}: {value}")
-
-    # Optional: Evaluate model using the tuned params on the full train-test split
-    results = {}
-    for horizon in model.horizons:
-        print(f"\nTraining and evaluating horizon t+{horizon}h...")
-        results[horizon] = model.train_and_evaluate(train_df, test_df, horizon)
-
-if __name__ == "__main__":
-    main()
-
-"""
-
-def main():
     # Create output directories
     plots_dir = 'models_14_38/xgboost/plots_hyperopt'
     os.makedirs(plots_dir, exist_ok=True)
@@ -252,4 +206,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
