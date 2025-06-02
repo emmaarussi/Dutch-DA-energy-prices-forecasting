@@ -53,27 +53,29 @@ thesis-dutch-energy-analysis/
 │   │   └── simple_linear_lags_and_dummies.py
 │   ├── linear_no_lags/   # Baseline linear models
 │   └── xgboost/          # XGBoost implementations
-│       ├── XGBoost_test_features_hyperparameters_cv/    
-│           └── XGBoost_topfeaturesselection.py
-│           └── XGBoost_topfeaturesselection.py
-│           ├── xgboost_CV_multiple_window_sizes.py
-│           ├── xgboost_clean_full_features.py
-│           ├── xgboost_clean_price_features_only.py
-│           └── xgboost_hyperopt.py
-│           ├── XGboostLSS_clean_all_features.py
+│       ├── XGBoost_test_features_hyperparameters_cv/
+│           └── CV_XGBoostLSS.py
+│           └── quantile_predictions_modelperq.py
 │           ├── test_xgboostlss.py
-│           ├──                    # Location-Scale-Shape 
-│       ├── CV_XGboostLSS.py  
-│       ├── ENBPIXGboost.py             # ENBI Implementation
-│       ├── Hyperopt_XGboostLSS.py                # Base Optimized Implementation
-│       ├── OptimizedXGboost.py
-│       ├── quantile_prediction_modelperq.py  
-results documentation
-                  # Split Conformal Prediction Intervals
+│           ├── xgboost_clean_full_features.py
+│           ├── xgboost_CV_multiple_window_sizes.py
+│           └── xgboost_hyperopt.py
+│           └── xgboost_quantile_subset_features.py
+│           ├── xgboost_clean_price_features_only.py
+│           └── XGBoost_topfeaturesselection.py
+│           ├── xgboostLSS_clean_full_features.py # Location-Scale-Shape 
+│      ├──      #Bootstrap methods and optimized LSS, optimized XGBoost              
+│            ├── ENBPIonline.py 
+│            ├── ENBPIXGboost.py             # ENBI Implementation
+│            ├── Hyperopt_XGboostLSS.py                # Base Optimized Implementation
+│            ├── OptimizedXGboost.py
+
+                  # Sieves and Split Conformal Prediction Intervals
 │       ├── SievesXGBoost.py                   # Sieves Bootstrap Implementation
+│       ├── SPCIonline.py                   # Sieves Bootstrap Implementation
+│       ├── SPCIbatcherror.py                   # SPCI Alternative Implementation
 │       ├── XGBoost_pinball_fulltrain.py       # Pinball Loss Training
-│       ├── secondtryspci.py                   # SPCI Alternative Implementation
-│       ├── XGBoosttesting/                    # Testing implementations
+│       ├── XGBoost_clean_price_featuresonly/                    # Testing implementations
 
 
 └── utils/              # Utility functions
