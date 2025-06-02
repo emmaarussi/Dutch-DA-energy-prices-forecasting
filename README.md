@@ -106,7 +106,7 @@ Due to file size limitations, the generation data file is not included in the re
 - `generation_by_source_2023_2024.csv`
 [text](data/raw/generation_by_source.csv)
 
-The other data (consumption, forecasts and prices can be obtained from the entsoe website with an API key.) But you can also get it from the Nederlandse Energie Dashboard, but please email e.s.arussi@student.vu.nl for the file if you need it. 
+The other data (consumption, forecasts and prices can be obtained from the entsoe website with an API key.) But you can also get it from the Nederlandse Energie Dashboard, but please email arussiconsult@outlook.com l for the file if you need it. 
 
 Other necessary data files will be generated through the processing pipeline.
 
