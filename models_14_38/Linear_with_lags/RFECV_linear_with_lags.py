@@ -12,6 +12,26 @@ Features:
 - Calendar effects (is_weekend, is_holiday)
 - Time of day effects (is_morning, is_evening)
 
+Metrics for 365D window:
+  Horizon t+14h:
+    MAE: 13.11
+    RMSE: 16.93
+    SMAPE: 23.14
+    WMAPE: 18.99
+    R2: 0.40
+  Horizon t+24h:
+    MAE: 14.13
+    RMSE: 18.06
+    SMAPE: 24.16
+    WMAPE: 20.54
+    R2: 0.31
+  Horizon t+38h:
+    MAE: 15.70
+    RMSE: 20.03
+    SMAPE: 26.00
+    WMAPE: 22.83
+    R2: 0.13
+
 Why do this you might ask, well, perhaps it simply works, and some literature from 2005 said its worth trying
 so here we are. We are not even AICing this, its just based on a hunch.
 """
