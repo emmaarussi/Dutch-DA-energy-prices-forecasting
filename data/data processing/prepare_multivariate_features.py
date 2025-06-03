@@ -63,36 +63,35 @@ def create_target_features(df, price_col='price_eur_per_mwh', forecast_horizon=3
     return targets
 
 def create_price_lagged_features(df):
-    """Create lagged features for all relevant generation and forecast signals."""
-    lags = list(range(1, 169))  # All lags from 1h to 168h (1 week)
-    sources = ['price_eur_per_mwh']
-    df = df.copy()
-    
-    lagged_features = []
-    for source in sources:
-        if source in df.columns:
-            source_lags = {f'{source}_lag_{lag}h': df[source].shift(lag) for lag in lags}
-            lagged_features.append(pd.DataFrame(source_lags))
-    
-    if lagged_features:
-        df = pd.concat([df] + lagged_features, axis=1)
-    return df
+    lags = list(range(1, 169))
+    source = 'price_eur_per_mwh'
+
+    if source not in df.columns:
+        return pd.DataFrame(index=df.index)
+
+    lagged_features = pd.DataFrame({
+        f'{source}_lag_{lag}h': df[source].shift(lag) for lag in lags
+    }, index=df.index)
+
+    return lagged_features
+
 
 def create_generation_lagged_features(df):
-    """Create lagged features for all relevant generation and forecast signals."""
-    lags = [1, 2, 3, 6, 12, 24, 48, 168]  # 1h to weekly
+    lags = [1, 2, 3, 6, 12, 24, 48, 168]
     sources = ['wind', 'solar', 'coal', 'consumption', 'consumption_forecast', 'wind_forecast', 'solar_forecast']
-    df = df.copy()
-    
-    lagged_features = []
+
+    lagged_frames = []
     for source in sources:
         if source in df.columns:
-            source_lags = {f'{source}_lag_{lag}h': df[source].shift(lag) for lag in lags}
-            lagged_features.append(pd.DataFrame(source_lags))
-    
-    if lagged_features:
-        df = pd.concat([df] + lagged_features, axis=1)
-    return df
+            lagged = pd.DataFrame({
+                f'{source}_lag_{lag}h': df[source].shift(lag) for lag in lags
+            }, index=df.index)
+            lagged_frames.append(lagged)
+
+    if lagged_frames:
+        return pd.concat(lagged_frames, axis=1)
+    else:
+        return pd.DataFrame(index=df.index)
 
 def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_horizon=38):
     """Prepare all features for training."""
@@ -109,6 +108,7 @@ def prepare_features_for_training(df, price_col='price_eur_per_mwh', forecast_ho
 
     # Clean up
     features.replace([np.inf, -np.inf], np.nan, inplace=True)
+    features = features.loc[:, ~features.columns.duplicated()]
     features.dropna(inplace=True)
 
     print(f"Created {len(features.columns)} features.")

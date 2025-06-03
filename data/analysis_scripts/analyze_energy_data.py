@@ -209,7 +209,7 @@ def plot_forecast_comparison():
     
     # Define colors for each variable
     colors = {
-        'wind': '#2ecc71',    # Green
+        'wind': '#1b7a44',    # Darker Green
         'solar': '#e67e22',    # Orange
         'consumption': '#e84393'  # Pink
     }
@@ -218,7 +218,7 @@ def plot_forecast_comparison():
     for i, var in enumerate(variables, 1):
         plt.subplot(3, 1, i)
         
-        # Plot historical and forecast with same color but different alpha
+        # Plot historical first (so forecast is on top)
         color = colors[var]
         # Plot forecast first (so historical is on top)
         forecast_color = '#e84393' if var == 'solar' else color  # Use pink for solar forecast
@@ -229,7 +229,7 @@ def plot_forecast_comparison():
         
         plt.title(f'{var.title()} - Historical vs Forecast', pad=20, fontsize=12)
         plt.ylabel('MW', fontsize=10)
-        plt.legend(frameon=True, fancybox=True, shadow=True)
+        plt.legend(frameon=True, fancybox=True, shadow=True, loc='center right', bbox_to_anchor=(1.13, 0.5))
         
         # Add text with correlation and RMSE
         corr = historical[var].corr(historical[f'{var}_forecast'])

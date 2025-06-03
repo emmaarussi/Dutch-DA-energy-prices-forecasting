@@ -31,25 +31,25 @@ def process_raw_data():
     df_gen['validto'] = pd.to_datetime(df_gen['validto'])
     
     # Filter for wind (type 1, no distinction between off and onshore) and solar (type 2), coal (type 8) and gas (type 23)
-    df_gen = df_gen[df_gen['type'].isin([1, 2, 8, 23])]
+    df_gen = df_gen[df_gen['type'].isin([1, 2, 8])]
     
     # Create separate dataframes for wind and solar
     df_wind = df_gen[df_gen['type'] == 1].copy()
     df_solar = df_gen[df_gen['type'] == 2].copy()
     df_kolen = df_gen[df_gen['type'] == 8].copy()
-    df_gas = df_gen[df_gen['type'] == 23].copy()
+    
     
     # Set index to validfrom and resample to hourly intervals
     df_wind.set_index('validfrom', inplace=True)
     df_solar.set_index('validfrom', inplace=True)
     df_kolen.set_index('validfrom', inplace=True)
-    df_gas.set_index('validfrom', inplace=True)
+   
     
     # Resample to hourly intervals using mean
     df_wind = df_wind.resample('h')['capacity'].mean()
     df_solar = df_solar.resample('h')['capacity'].mean()
     df_kolen = df_kolen.resample('h')['capacity'].mean()
-    df_gas = df_gas.resample('h')['capacity'].mean()    
+     
     
     # Keeping data in original units, which are kW, for consistency with the raw data.
     # will convert to MW in feature engineering step for consistency with other variables
@@ -90,7 +90,7 @@ def process_raw_data():
     historical['solar'] = df_solar.reindex(historical.index)  # In MW
     historical['consumption'] = df_consumption.reindex(historical.index)  # In MW
     historical['coal'] = df_kolen.reindex(historical.index)  # In MW
-    historical['gas'] = df_gas.reindex(historical.index)  # In MW
+    
     
     # Add forecasted values
     historical['wind_forecast'] = wind_forecasts.reindex(historical.index)
