@@ -136,6 +136,7 @@ def SimpleARModel_fixedlags(train_data, forecast_start, window_size='365D', hori
 
 
 def main():
+    start_time = time.time()
     # Load data
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     features_path = os.path.join(project_root, 'data', 'processed', 'multivariate_features.csv')
@@ -211,6 +212,8 @@ def main():
             os.makedirs('models_14_38/ar/plots/plots_ar_setlags', exist_ok=True)
             plt.savefig(f'models_14_38/ar/plots/plots_ar_setlags/predictions_over_time_{window_size}_{h}h.png', dpi=300, bbox_inches='tight')
             plt.close()
+
+    print(f"\n✅ Completed AR  in {time.time() - start_time:.2f} seconds")
 
 if __name__ == "__main__":
     os.makedirs('models_14_38/ar/plots_ar_setlags', exist_ok=True)
