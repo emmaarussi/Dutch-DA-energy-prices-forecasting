@@ -44,40 +44,10 @@ thesis-dutch-energy-analysis/
 │   └── raw/              # Raw data files
 ├── models_14_38/        # Models for 14-38h forecasting
 │   ├── ar/              # Autoregressive models
-│   │   ├── linear_setlags_rollingwindowstepsizeone.py
-│   │   ├── rolling_ar_windowplaying.py
-│   │   └── simple_arp_recursive.py
 │   ├── Linear_with_lags/ # Linear models with lagged features
-│   │   ├── linear_full_features.py
-│   │   ├── RFECV_linear_with_lags.py
-│   │   └── simple_linear_lags_and_dummies.py
-│   ├── linear_no_lags/   # Baseline linear models
 │   └── xgboost/          # XGBoost implementations
-│       ├── XGBoost_test_features_hyperparameters_cv/
-│           └── CV_XGBoostLSS.py
-│           └── quantile_predictions_modelperq.py
-│           ├── test_xgboostlss.py
-│           ├── xgboost_clean_full_features.py
-│           ├── xgboost_CV_multiple_window_sizes.py
-│           └── xgboost_hyperopt.py
-│           └── xgboost_quantile_subset_features.py
-│           ├── xgboost_clean_price_features_only.py
-│           └── XGBoost_topfeaturesselection.py
-│           ├── xgboostLSS_clean_full_features.py # Location-Scale-Shape 
-│      ├──      #Bootstrap methods and optimized LSS, optimized XGBoost              
-│            ├── ENBPIonline.py 
-│            ├── ENBPIXGboost.py             # ENBI Implementation
-│            ├── Hyperopt_XGboostLSS.py                # Base Optimized Implementation
-│            ├── OptimizedXGboost.py
-
-                  # Sieves and Split Conformal Prediction Intervals
-│       ├── SievesXGBoost.py                   # Sieves Bootstrap Implementation
-│       ├── SPCIonline.py                   # Sieves Bootstrap Implementation
-│       ├── SPCIbatcherror.py                   # SPCI Alternative Implementation
-│       ├── XGBoost_pinball_fulltrain.py       # Pinball Loss Training
-│       ├── XGBoost_clean_price_featuresonly/                    # Testing implementations
-
-
+│   └── xgboostLSS/          # XGBoost implementations
+│   └── Resultvisuals/          # somevisualisation and stattests
 └── utils/              # Utility functions
 ```
 
@@ -258,8 +228,7 @@ graph TD
       - Feature Selection: `RFECV_linear_with_lags.py`
       - Simple Implementation: `simple_linear_lags_and_dummies.py`
    
-   2. Without Lags (`models_14_38/linear_no_lags/`):
-      - Basic Implementation: `simple_no_lags.py`
+
 
 
 
@@ -293,29 +262,23 @@ Model performance is evaluated using adapted SMAPE (for correction of infinite v
 1. **XGBoost LSS (Location-Scale-Shape)**
    - Parametric approach assuming Gaussian distribution
    - Outputs mean (location) and standard deviation (scale)
-   - 95% prediction intervals
-   - Implementation: `Hyperopt_XGboostLSS.py`
+   - 90% prediction intervals
+   - Implementation: `XGBoostLSS/Driftwithretrain.py`
 
-2. **Quantile Regression**
-   - Non-parametric approach
-   - Direct estimation of quantiles (10%, 50%, 90%)
-   - 80% prediction intervals
-   - Implementation: `quantile_prediction_modelperq.py`, `XGBoost_pinball_fulltrain.py`
-
-3. **ENBI (Ensemble-based Nonparametric Bootstrap Intervals)**
+2. **ENBI (Ensemble-based Nonparametric Bootstrap Intervals)**
    - Bootstrap-based approach
    - Uses ensemble predictions for interval construction
-   - Implementation: `ENBPIXGboost.py`
+   - Implementation: `ENBPIXonline.py`
 
-4. **SPCI (Split Conformal Prediction Intervals)**
+3. **SPCI (Split Conformal Prediction Intervals)**
    - Distribution-free approach
    - Provides theoretical coverage guarantees
-   - Implementation: `SPCI_XGBoost.py`, `secondtryspci.py`
+   - Implementation: `SPCIonline.py`, `secondtryspci.py`
 
-5. **Sieves Bootstrap**
+4. **Sequential Sieves Bootstrap prediction intervals**
    - Resampling-based approach
    - Preserves time series structure
-   - Implementation: `SievesXGBoost.py`
+   - Implementation: `SievesonlineXGBoost.py`
 
 ## License
 
