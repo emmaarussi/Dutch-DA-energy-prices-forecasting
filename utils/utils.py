@@ -177,7 +177,7 @@ def rolling_window_evaluation_recursive(model, data, window_size='365D', step_si
     
     return final_metrics, all_predictions
 
-def rolling_window_evaluation(self, data, window_size='365D', step_size='7D', test_size='7D'):
+def rolling_window_evaluation(data, window_size='365D', step_size='7D', test_size='7D'):
     """Perform rolling window cross-validation."""
     # Convert string periods to timedelta
     window_td = pd.Timedelta(window_size)
